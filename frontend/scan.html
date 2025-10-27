@@ -1,0 +1,72 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="scan()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Scan QR Code</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function scan() {
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.scan !== 'function') {
+            if (typeof my.canIUse === 'function' && !my.canIUse('scan')) {
+                console.error('my.scan is not available, client version too low');
+            }
+            return;
+        }
+        
+        my.scan({ 
+            type: 'qr',
+            hideAlbum: false,
+            success:(res)=>{
+                console.log('scan success:', res);
+            },
+            fail:(error)=>{
+                console.error('scan fail:', error);
+                let errorMessage = 'Scan failed';
+                if (error.error) {
+                    switch (error.error) {
+                        case 10:
+                            errorMessage = 'User cancelled scanning';
+                            break;
+                        case 11:
+                            errorMessage = 'Operation failed';
+                            break;
+                        default:
+                            errorMessage = error.errorMessage || 'Unknown error occurred';
+                    }
+                }
+                console.error('scan fail:', errorMessage);
+            },
+            complete:(res)=>{
+                console.log('scan complete:', res);
+            }
+        }); 
+    }
+    
+</script>
+
+</html>

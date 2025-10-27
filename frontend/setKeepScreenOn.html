@@ -1,0 +1,49 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <div class="mb-2">
+                <label class="flex items-center">
+                    <input type="checkbox" id="keepScreenOnToggle" onchange="setKeepScreenOn(event)" class="mr-2">
+                    Keep screen on
+                </label>
+            </div>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function setKeepScreenOn(event) {
+        const keepScreenOn = event.target.checked;
+        my.setKeepScreenOn({
+            keepScreenOn: keepScreenOn,
+            success: (res) => {
+                console.log(res);
+            },
+            fail: (res) => {
+                console.log(res);
+            },
+            complete: (res) => {
+                console.log(res);
+            }
+        });
+    }
+</script>
+
+</html>

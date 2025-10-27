@@ -1,0 +1,91 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getFacePhotoData()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get Face Photo Data</button>
+            <button onclick="showTestImage()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Show Test Image</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+            
+            <div id="facePhotoContainer" class="w-full mt-4" style="display: none;">
+                <h3 class="text-lg font-semibold mb-2">Face Photo:</h3>
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <img id="facePhoto" src="" alt="Face Photo" class="max-w-full h-auto rounded-lg shadow-md">
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+<script>
+    function getFacePhotoData() {
+        AlipayJSBridge.call('getFacePhotoData',{scene:'QUERY_KYC_INFO'},
+            function(data){
+                console.log('getFacePhotoData success: ', data);
+                console.log('Response type:', typeof data);
+                console.log('Response keys:', Object.keys(data || {}));
+                
+                const photoContainer = document.getElementById('facePhotoContainer');
+                const photoImg = document.getElementById('facePhoto');
+                
+                if (data) {
+                    console.log('Data status:', data.status);
+                    console.log('Has photo property:', 'photo' in data);
+                    console.log('Photo data type:', typeof data.photo);
+                    console.log('Photo data length:', data.photo ? data.photo.length : 'N/A');
+                    
+                    if (data.status === 'success' && data.photo) {
+                        const base64Data = data.photo.startsWith('data:') ? data.photo : 'data:image/jpeg;base64,' + data.photo;
+                        photoImg.src = base64Data;
+                        photoContainer.style.display = 'block';
+                        console.log('Face photo displayed successfully');
+                        console.log('Image src set to:', base64Data.substring(0, 50) + '...');
+                    } else if (data.status === 'fail') {
+                        photoContainer.style.display = 'none';
+                        console.log('Face photo failed:', data.message || 'Unknown error');
+                    } else {
+                        if (data.photo) {
+                            const base64Data = data.photo.startsWith('data:') ? data.photo : 'data:image/jpeg;base64,' + data.photo;
+                            photoImg.src = base64Data;
+                            photoContainer.style.display = 'block';
+                            console.log('Displaying photo despite unexpected status');
+                        } else {
+                            photoContainer.style.display = 'none';
+                            console.log('No photo data found in response');
+                        }
+                    }
+                } else {
+                    photoContainer.style.display = 'none';
+                    console.log('No data received');
+                }
+            });
+    }
+
+    function showTestImage() {
+        const photoContainer = document.getElementById('facePhotoContainer');
+        const photoImg = document.getElementById('facePhoto');
+        
+        const testImageBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+        photoImg.src = 'data:image/png;base64,' + testImageBase64;
+        photoContainer.style.display = 'block';
+        console.log('Test image displayed');
+    }
+</script>
+
+</html>

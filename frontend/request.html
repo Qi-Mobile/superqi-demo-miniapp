@@ -1,0 +1,198 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>my.request API Test - Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="testGetRequest()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-600 transition">
+                Test GET Request
+            </button>
+            
+            <button onclick="testPostRequest()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-600 transition">
+                Test POST Request (JSON)
+            </button>
+            
+            <button onclick="testPostFormRequest()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-600 transition">
+                Test POST Request (Form)
+            </button>
+            
+            <button onclick="testWithCustomHeaders()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-600 transition">
+                Test with Custom Headers
+            </button>
+            
+            <button onclick="testErrorHandling()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-600 transition">
+                Test Error Handling
+            </button>
+            
+
+        </div>
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+<script>
+    // Helper function to log to console
+    function log(message, type = 'info') {
+        const consoleEl = document.querySelector('miniapp-console');
+        if (consoleEl) {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'blue';
+            consoleEl.innerHTML += `<div style="color: ${color}; margin: 5px 0;">[${timestamp}] ${message}</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+        console.log(message);
+    }
+
+    // Test GET request
+    function testGetRequest() {
+        log('Testing GET request...');
+        
+        my.request({
+            url: 'https://httpbin.org/get?test=value&mini=program',
+            method: 'GET',
+            dataType: 'json',
+            success: (res) => {
+                log('GET Request successful!', 'success');
+                log(`Status: ${res.status}`);
+                log(`Response: ${JSON.stringify(res.data, null, 2)}`);
+            },
+            fail: (err) => {
+                log(`GET Request failed: ${JSON.stringify(err)}`, 'error');
+            },
+            complete: () => {
+                log('GET request completed');
+            }
+        });
+    }
+
+    // Test POST request with JSON
+    function testPostRequest() {
+        log('Testing POST request (JSON)...');
+        
+        my.request({
+            url: 'https://httpbin.org/post',
+            method: 'POST',
+            data: {
+                from: 'Mini Program',
+                productId: 'JSAPI',
+                timestamp: new Date().toISOString(),
+                testData: {
+                    nested: 'value',
+                    array: [1, 2, 3]
+                }
+            },
+            dataType: 'json',
+            success: (res) => {
+                log('POST Request (JSON) successful!', 'success');
+                log(`Status: ${res.status}`);
+                log(`Response: ${JSON.stringify(res.data, null, 2)}`);
+            },
+            fail: (err) => {
+                log(`POST Request failed: ${JSON.stringify(err)}`, 'error');
+            },
+            complete: () => {
+                log('POST request (JSON) completed');
+            }
+        });
+    }
+
+    // Test POST request with form encoding
+    function testPostFormRequest() {
+        log('Testing POST request (Form-encoded)...');
+        
+        my.request({
+            url: 'https://httpbin.org/post',
+            method: 'POST',
+            headers: {
+                'content-type': 'application/x-www-form-urlencoded'
+            },
+            data: {
+                username: 'testuser',
+                email: 'test@example.com',
+                action: 'form_submit'
+            },
+            dataType: 'json',
+            success: (res) => {
+                log('POST Request (Form) successful!', 'success');
+                log(`Status: ${res.status}`);
+                log(`Response: ${JSON.stringify(res.data, null, 2)}`);
+            },
+            fail: (err) => {
+                log(`POST Request (Form) failed: ${JSON.stringify(err)}`, 'error');
+            },
+            complete: () => {
+                log('POST request (Form) completed');
+            }
+        });
+    }
+
+    // Test with custom headers
+    function testWithCustomHeaders() {
+        log('Testing request with custom headers...');
+        
+        my.request({
+            url: 'https://httpbin.org/headers',
+            method: 'GET',
+            headers: {
+                'X-Custom-Header': 'MiniProgram-Test',
+                'X-API-Key': 'test-key-12345',
+                'User-Agent': 'MiniProgram/1.0'
+            },
+            dataType: 'json',
+            success: (res) => {
+                log('Custom headers request successful!', 'success');
+                log(`Status: ${res.status}`);
+                log(`Response: ${JSON.stringify(res.data, null, 2)}`);
+            },
+            fail: (err) => {
+                log(`Custom headers request failed: ${JSON.stringify(err)}`, 'error');
+            },
+            complete: () => {
+                log('Custom headers request completed');
+            }
+        });
+    }
+
+    // Test error handling
+    function testErrorHandling() {
+        log('Testing error handling (invalid URL)...');
+        
+        my.request({
+            url: 'https://httpbin.org/status/404',
+            method: 'GET',
+            dataType: 'json',
+            timeout: 5000,
+            success: (res) => {
+                log(`Request completed with status: ${res.status}`, 'success');
+                log(`Response: ${JSON.stringify(res.data, null, 2)}`);
+            },
+            fail: (err) => {
+                log(`Request failed as expected: ${JSON.stringify(err)}`, 'error');
+            },
+            complete: () => {
+                log('Error handling test completed');
+            }
+        });
+    }
+
+    // Initial message
+    window.addEventListener('DOMContentLoaded', () => {
+        log('my.request API Test Page loaded');
+        log('Click buttons above to test different API scenarios');
+    });
+</script>
+</html>
