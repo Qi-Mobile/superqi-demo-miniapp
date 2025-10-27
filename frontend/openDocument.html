@@ -1,0 +1,212 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Open Document</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="chooseAndOpenDocument()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Image & Open Document</button>
+            <button onclick="downloadAndOpenPDF()"
+                class="bg-green-400 text-white px-4 py-2 font-bold w-full rounded-md">Download & Open Sample PDF</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function chooseAndOpenDocument() {
+        console.log('Starting choose and open document...');
+        
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.chooseImage !== 'function') {
+            console.error('my.chooseImage is not available');
+            return;
+        }
+        
+        if (typeof my.openDocument !== 'function') {
+            console.error('my.openDocument is not available');
+            return;
+        }
+        
+        my.chooseImage({
+            success: (res) => {
+                console.log('Image chosen:', JSON.stringify(res));
+                
+                if (res.apFilePaths && res.apFilePaths.length > 0) {
+                    openDocument(res.apFilePaths[0], 'pdf');
+                } else {
+                    console.error('No file paths returned from chooseImage');
+                    my.alert({
+                        content: 'No file selected',
+                        success: () => console.log('Alert shown'),
+                        fail: (err) => console.error('Failed to show alert:', err)
+                    });
+                }
+            },
+            fail: (res) => {
+                console.error('Choose image failed:', JSON.stringify(res));
+                my.alert({
+                    content: 'Failed to choose file',
+                    success: () => console.log('Error alert shown'),
+                    fail: (err) => console.error('Failed to show error alert:', err)
+                });
+            }
+        });
+    }
+
+    function downloadAndOpenPDF() {
+        console.log('Starting download and open PDF...');
+        
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.downloadFile !== 'function') {
+            console.error('my.downloadFile is not available');
+            return;
+        }
+        
+        if (typeof my.openDocument !== 'function') {
+            console.error('my.openDocument is not available');
+            return;
+        }
+        
+        my.showLoading({
+            content: 'Downloading PDF...',
+            success: () => {
+                console.log('Loading indicator shown');
+            },
+            fail: (err) => {
+                console.error('Failed to show loading:', err);
+            }
+        });
+        
+        const pdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+        
+        console.log('Downloading PDF from:', pdfUrl);
+        
+        my.downloadFile({
+            url: pdfUrl,
+            success: (res) => {
+                console.log('Download SUCCESS:', JSON.stringify(res));
+                
+                my.hideLoading({
+                    success: () => {
+                        console.log('Loading indicator hidden');
+                    },
+                    fail: (err) => {
+                        console.error('Failed to hide loading:', err);
+                    }
+                });
+                
+                if (res.apFilePath) {
+                    console.log('File downloaded to:', res.apFilePath);
+                    
+                    openDocument(res.apFilePath, 'pdf');
+                } else {
+                    console.error('No file path returned from download');
+                    my.alert({
+                        content: 'Download failed - no file path returned',
+                        success: () => console.log('Error alert shown'),
+                        fail: (err) => console.error('Failed to show error alert:', err)
+                    });
+                }
+            },
+            fail: (res) => {
+                console.error('Download FAILED:', JSON.stringify(res));
+                
+                my.hideLoading({
+                    success: () => {
+                        console.log('Loading indicator hidden after error');
+                    },
+                    fail: (err) => {
+                        console.error('Failed to hide loading after error:', err);
+                    }
+                });
+                
+                my.alert({
+                    content: 'Failed to download PDF file',
+                    success: () => console.log('Error alert shown'),
+                    fail: (err) => console.error('Failed to show error alert:', err)
+                });
+            }
+        });
+    }
+
+    function openDocument(filePath, fileType) {
+        console.log('Opening document:', filePath, 'Type:', fileType);
+        
+        my.openDocument({
+            filePath: filePath,
+            fileType: fileType,
+            success: (res) => {
+                console.log('Open document SUCCESS:', JSON.stringify(res));
+                console.log('Document opened successfully');
+                
+                displayDocumentInfo({
+                    filePath: filePath,
+                    fileType: fileType,
+                    status: 'opened'
+                });
+                
+                my.alert({
+                    content: 'Document opened successfully!',
+                    success: () => console.log('Success alert shown'),
+                    fail: (err) => console.error('Failed to show success alert:', err)
+                });
+            },
+            fail: (res) => {
+                console.error('Open document FAILED:', JSON.stringify(res));
+                
+                let errorMessage = 'Failed to open document';
+                if (res.error) {
+                    switch (res.error) {
+                        case 4011:
+                            errorMessage = 'File path is invalid or no permission to access the path';
+                            break;
+                        case 4012:
+                            errorMessage = 'Preview file does not exist';
+                            break;
+                        case 4013:
+                            errorMessage = 'File format is not supported (only PDF is supported)';
+                            break;
+                        default:
+                            errorMessage = res.errorMessage || 'Unknown error occurred';
+                    }
+                }
+                
+                console.error('Error details:', errorMessage);
+                
+                my.alert({
+                    content: errorMessage,
+                    success: () => console.log('Error alert shown'),
+                    fail: (err) => console.error('Failed to show error alert:', err)
+                });
+            },
+            complete: (res) => {
+                console.log('Open document COMPLETE:', JSON.stringify(res));
+            }
+        });
+    }
+    
+</script>
+
+</html>

@@ -1,0 +1,135 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Get Location - Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getLocation()"
+                class="bg-yellow-400 text-stone-900 px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-500 transition">
+                Get Current Location
+            </button>
+            <button onclick="getLocationWithCache()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md hover:bg-blue-500 transition">
+                Get Location (with 60s cache)
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function formatLocation(longitude, latitude) {
+        return `Lat: ${latitude}, Lng: ${longitude}`;
+    }
+
+    function getLocation() {
+        console.log('Getting location...');
+        my.showLoading({ title: 'Getting location...' });
+        
+        my.getLocation({
+            success(res) {
+                my.hideLoading();
+                console.log('Location success:', res);
+                console.log('Formatted location:', formatLocation(res.longitude, res.latitude));
+            },
+            fail(err) {
+                my.hideLoading();
+                console.error('Location failed:', err);
+                
+                let errorMessage = 'Location failed';
+                if (err && err.error) {
+                    switch(err.error) {
+                        case 11:
+                            errorMessage = 'Location permission denied. Please enable location access.';
+                            break;
+                        case 12:
+                            errorMessage = 'Network error. Please check your connection and try again.';
+                            break;
+                        case 13:
+                            errorMessage = 'Location service failed. Please try again later.';
+                            break;
+                        case 14:
+                            errorMessage = 'Location request timeout. Please try again.';
+                            break;
+                        default:
+                            errorMessage = `Location failed with error code: ${err.error}`;
+                    }
+                }
+                
+                my.alert({ 
+                    title: 'Location Error', 
+                    content: errorMessage 
+                });
+            },
+            complete() {
+                console.log('Location request completed');
+            }
+        });
+    }
+
+    function getLocationWithCache() {
+        console.log('Getting location with 60s cache...');
+        my.showLoading({ title: 'Getting location (cached)...' });
+        
+        my.getLocation({
+            cacheTimeout: 60,
+            success(res) {
+                my.hideLoading();
+                console.log('Location success (cached):', res);
+                console.log('Formatted location (cached):', formatLocation(res.longitude, res.latitude));
+            },
+            fail(err) {
+                my.hideLoading();
+                console.error('Location failed (cached):', err);
+                
+                let errorMessage = 'Location failed';
+                if (err && err.error) {
+                    switch(err.error) {
+                        case 11:
+                            errorMessage = 'Location permission denied. Please enable location access.';
+                            break;
+                        case 12:
+                            errorMessage = 'Network error. Please check your connection and try again.';
+                            break;
+                        case 13:
+                            errorMessage = 'Location service failed. Please try again later.';
+                            break;
+                        case 14:
+                            errorMessage = 'Location request timeout. Please try again.';
+                            break;
+                        default:
+                            errorMessage = `Location failed with error code: ${err.error}`;
+                    }
+                }
+                
+                my.alert({ 
+                    title: 'Location Error', 
+                    content: errorMessage 
+                });
+            },
+            complete() {
+                console.log('Location request completed (cached)');
+            }
+        });
+    }
+
+    window.onload = function() {
+        console.log('Get Location page loaded');
+    };
+</script>
+
+</html>

@@ -1,0 +1,71 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <input id="clipboardInput" type="text" placeholder="Enter text to copy to clipboard" 
+                class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                value="3.1415926">
+            <button onclick="setClipboard()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Set Clipboard</button>
+            <button onclick="getClipboard()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Get Clipboard</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function setClipboard() {
+        const inputElement = document.getElementById('clipboardInput');
+        const textToCopy = inputElement.value || '3.1415926';
+        
+        my.setClipboard({
+            text: textToCopy,
+            success: (res) => {
+                console.log('Set clipboard SUCCESS:', JSON.stringify(res));
+            },
+            fail: (res) => {
+                console.error('Set clipboard FAILED:', JSON.stringify(res));
+            },
+            complete: (res) => {
+                console.log('Set clipboard COMPLETE:', JSON.stringify(res));
+            }
+        });
+    }
+
+    function getClipboard() {
+        my.getClipboard({
+            success: (res) => {
+                console.log('Get clipboard SUCCESS:', JSON.stringify(res));
+                if (res && res.text) {
+                    const inputElement = document.getElementById('clipboardInput');
+                    inputElement.value = res.text;
+                    console.log('Retrieved clipboard text:', res.text);
+                }
+            },
+            fail: (res) => {
+                console.error('Get clipboard FAILED:', JSON.stringify(res));
+            },
+            complete: (res) => {
+                console.log('Get clipboard COMPLETE:', JSON.stringify(res));
+            }
+        });
+    }
+</script>
+
+</html>

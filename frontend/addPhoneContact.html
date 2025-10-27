@@ -1,0 +1,159 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <div class="mb-4">
+                <h3 class="text-lg font-bold mb-2">Add Phone Contact</h3>
+                <p class="text-sm text-gray-600">Fill in contact details and click "Add Contact" to add to phone's contact list</p>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-2">
+                <input type="text" id="firstName" placeholder="First Name" class="px-3 py-2 border rounded-md">
+                <input type="text" id="middleName" placeholder="Middle Name" class="px-3 py-2 border rounded-md">
+                <input type="text" id="lastName" placeholder="Last Name" class="px-3 py-2 border rounded-md">
+                <input type="text" id="nickName" placeholder="Nickname" class="px-3 py-2 border rounded-md">
+                <input type="text" id="mobilePhoneNumber" placeholder="Mobile Phone" class="px-3 py-2 border rounded-md">
+                <input type="text" id="email" placeholder="Email" class="px-3 py-2 border rounded-md">
+                <input type="text" id="organization" placeholder="Organization" class="px-3 py-2 border rounded-md">
+                <input type="text" id="title" placeholder="Title" class="px-3 py-2 border rounded-md">
+                <textarea id="remark" placeholder="Remarks" class="px-3 py-2 border rounded-md" rows="2"></textarea>
+            </div>
+            
+            <button onclick="addPhoneContact()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md mt-4">
+                Add Contact
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    const defaultData = {
+        "photoFilePath": "/sdcard/DCIM/Camera/a.jpg",
+        "nickName": "Baking July",
+        "lastName": "Last",
+        "middleName": "Middle",
+        "firstName": "First",
+        "remark": "This is remarks",
+        "mobilePhoneNumber": "13800000000",
+        "homePhoneNumber": "11111115",
+        "workPhoneNumber": "11111112",
+        "homeFaxNumber": "11111114",
+        "workFaxNumber": "11111111",
+        "hostNumber": "11111113",
+        "addressCountry": "address country",
+        "addressState": "address state",
+        "addressCity": "address city",
+        "addressStreet": "address street",
+        "addressPostalCode": "94016",
+        "workAddressCountry": "work country",
+        "workAddressState": "work state",
+        "workAddressCity": "work city",
+        "workAddressStreet": "work street",
+        "workAddressPostalCode": "111111",
+        "homeAddressCountry": "home country",
+        "homeAddressState": "home state",
+        "homeAddressCity": "home city",
+        "homeAddressStreet": "home street",
+        "homeAddressPostalCode": "123456",
+        "organization": "organization",
+        "title": "Developer",
+        "email": "liuhuo01@miniprogram.com",
+        "url": "www.miniprogram.com"
+    };
+
+    window.onload = function() {
+        populateFormData();
+    };
+
+    function populateFormData() {
+        Object.keys(defaultData).forEach(key => {
+            const element = document.getElementById(key);
+            if (element && defaultData[key]) {
+                element.value = defaultData[key];
+            }
+        });
+    }
+
+    function getFormData() {
+        const formData = {};
+        
+        const inputs = document.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            if (input.value.trim()) {
+                formData[input.id] = input.value.trim();
+            }
+        });
+
+        Object.keys(defaultData).forEach(key => {
+            if (!formData[key] && defaultData[key]) {
+                formData[key] = defaultData[key];
+            }
+        });
+
+        return formData;
+    }
+
+    function addPhoneContact() {
+        console.log('addPhoneContact called');
+        
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.addPhoneContact !== 'function') {
+            console.error('my.addPhoneContact is not available');
+            console.log('Available methods in my object:', Object.keys(my));
+            if (typeof my.canIUse === 'function' && !my.canIUse('addPhoneContact')) {
+                my.alert({ 
+                    title: 'Client version too low',
+                    content: 'my.addPhoneContact() needs higher version'
+                });
+            }
+            return;
+        }
+
+        const contactData = getFormData();
+        
+        console.log('Calling my.addPhoneContact with data:', contactData);
+        
+        my.addPhoneContact({
+            ...contactData,
+            success: (res) => {
+                console.log('addPhoneContact success:', res);
+                my.alert({
+                    title: 'Success',
+                    content: 'Contact added successfully: ' + JSON.stringify(res)
+                });
+            },
+            fail: (res) => {
+                console.log('addPhoneContact fail:', res);
+                my.alert({
+                    title: 'Failed',
+                    content: 'Failed to add contact: ' + JSON.stringify(res)
+                });
+            },
+            complete: (res) => {
+                console.log('addPhoneContact complete:', res);
+            }
+        });
+    }
+</script>
+
+</html>

@@ -1,0 +1,477 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Agreement Payment</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <h1 class="text-2xl font-bold">To be implemented</h1>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="prepareContract()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                1. Prepare Contract
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="signButton" onclick="signContract()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                2. Sign Contract (Authorize)
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="applyTokenButton" onclick="applyAccessToken()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                3. Apply Access Token
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="executePaymentButton" onclick="executeAgreementPayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                4. Execute Agreement Payment
+            </button>
+        </div>
+
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    // =========================================================================
+    // STATE MANAGEMENT
+    // =========================================================================
+    const agreementState = {
+        authorizationUrl: '',
+        authCode: '',
+        
+        accessToken: '',
+        refreshToken: '',
+        tokenExpiry: '',
+        
+        paymentId: '',
+        paymentAmount: 0,
+        
+        currentStep: 0
+    };
+
+    // =========================================================================
+    // STEP 1: PREPARE CONTRACT
+    // =========================================================================
+
+    function prepareContract() {
+    console.log('=================================================================');
+    console.log('[Frontend] STEP 1: PREPARE CONTRACT');
+    console.log('=================================================================');
+    
+    console.log('[Frontend] DIAGNOSTIC CHECKS:');
+    console.log('[Frontend] Checking if BASE_URL is defined...');
+    if (typeof BASE_URL === 'undefined') {
+        console.error('[Frontend] CRITICAL ERROR: BASE_URL is not defined!');
+        console.error('[Frontend] BASE_URL should be defined in /common/main.js');
+        console.error('[Frontend] Example: const BASE_URL = "http://localhost:1999";');
+        return;
+    }
+    console.log('[Frontend] BASE_URL is defined:', BASE_URL);
+    
+    const fullUrl = `${BASE_URL}/api/agreement/prepare`;
+    console.log('[Frontend] Full API URL:', fullUrl);
+    console.log('[Frontend] URL breakdown:');
+    console.log('[Frontend]   - Protocol:', fullUrl.split('://')[0]);
+    console.log('[Frontend]   - Host:', fullUrl.split('://')[1]?.split('/')[0]);
+    console.log('[Frontend]   - Path:', '/' + fullUrl.split('://')[1]?.split('/').slice(1).join('/'));
+    
+    const requestBody = {
+        contractDescription: 'Monthly subscription - Auto-payment authorization'
+    };
+    console.log('[Frontend] Request body:', JSON.stringify(requestBody, null, 2));
+    
+    console.log('[Frontend] -----------------------------------------------------------');
+    console.log('[Frontend] Initiating fetch request...');
+    console.log('[Frontend] This will call: POST /v1/authorizations/prepare (via backend)');
+
+    fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(res => {
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.log('[Frontend] FETCH RESPONSE RECEIVED');
+        console.log('[Frontend] Response status:', res.status);
+        console.log('[Frontend] Response status text:', res.statusText);
+        console.log('[Frontend] Response OK?', res.ok);
+        console.log('[Frontend] Response headers:');
+        for (let [key, value] of res.headers.entries()) {
+            console.log(`[Frontend]   ${key}: ${value}`);
+        }
+        console.log('[Frontend] -----------------------------------------------------------');
+        
+        if (!res.ok) {
+            console.error('[Frontend] HTTP Error Response');
+            console.error('[Frontend] Status code indicates failure:', res.status);
+            if (res.status === 404) {
+                console.error('[Frontend] 404 NOT FOUND - Endpoint does not exist');
+                console.error('[Frontend] Check:');
+                console.error('[Frontend]   1. Backend is running');
+                console.error('[Frontend]   2. Endpoint registered in main.go');
+                console.error('[Frontend]   3. URL is correct:', fullUrl);
+            } else if (res.status === 500) {
+                console.error('[Frontend] 500 INTERNAL SERVER ERROR - Backend crashed');
+            } else if (res.status === 0 || res.status === 503) {
+                console.error('[Frontend] Backend is not responding - Connection refused');
+                console.error('[Frontend] Is the Go server running on port', BASE_URL.split(':').pop(), '?');
+            }
+        }
+        
+        return res.ok ? res.json() : res.text();
+    })
+    .then(data => {
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.log('[Frontend] PARSING RESPONSE DATA');
+        console.log('[Frontend] Data type:', typeof data);
+        
+        if (typeof data === 'string') {
+            console.error('[Frontend] Response is STRING (expected JSON object)');
+            console.error('[Frontend] Raw response text:', data);
+            console.error('[Frontend] This usually means:');
+            console.error('[Frontend]   1. Backend returned an error message');
+            console.error('[Frontend]   2. Backend crashed');
+            console.error('[Frontend]   3. Wrong endpoint');
+            console.log('=================================================================\n');
+            
+            return;
+        }
+        
+        console.log('[Frontend] Response data (full):', JSON.stringify(data, null, 2));
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.log('[Frontend] VALIDATING RESPONSE STRUCTURE');
+        console.log('[Frontend] Checking for required fields...');
+        console.log('[Frontend]   - Has "authUrl" field?', 'authUrl' in data);
+        console.log('[Frontend]   - authUrl value:', data.authUrl);
+        console.log('[Frontend]   - authUrl type:', typeof data.authUrl);
+        console.log('[Frontend]   - Has "success" field?', 'success' in data);
+        console.log('[Frontend]   - success value:', data.success);
+        console.log('[Frontend]   - Has "resultStatus" field?', 'resultStatus' in data);
+        console.log('[Frontend]   - resultStatus value:', data.resultStatus);
+        console.log('[Frontend] All response keys:', Object.keys(data));
+
+        if (typeof data === 'object' && data.authUrl) {
+            agreementState.authorizationUrl = data.authUrl;
+            agreementState.currentStep = 1;
+            
+            console.log('[Frontend] SUCCESS: All validations passed');
+            console.log('[Frontend] Authorization URL received:', data.authUrl);
+            console.log('[Frontend] Contract preparation complete');
+            console.log('[Frontend] Next step: Click "Sign Contract" button');
+            console.log('=================================================================\n');
+
+            enableButton('signButton');
+            disableButton('applyTokenButton');
+            disableButton('executePaymentButton');
+
+        } else {
+            console.error('[Frontend] VALIDATION FAILED: No authUrl in response');
+            console.error('[Frontend] Expected structure: { success: true, authUrl: "..." }');
+            console.error('[Frontend] Actual structure:', data);
+            console.log('=================================================================\n');
+            
+        }
+    })
+    .catch(error => {
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.error('[Frontend] FETCH EXCEPTION CAUGHT');
+        console.error('[Frontend] Error type:', error.name);
+        console.error('[Frontend] Error message:', error.message);
+        console.error('[Frontend] Error stack:', error.stack);
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.error('[Frontend] Common causes:');
+        console.error('[Frontend]   1. CORS error - Backend not allowing frontend origin');
+        console.error('[Frontend]   2. Network error - Backend not running');
+        console.error('[Frontend]   3. Timeout - Backend too slow');
+        console.error('[Frontend]   4. DNS error - Invalid BASE_URL');
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.log('[Frontend] Troubleshooting steps:');
+        console.log('[Frontend]   1. Check if backend is running: curl', fullUrl);
+        console.log('[Frontend]   2. Check browser Network tab for request details');
+        console.log('[Frontend]   3. Check CORS headers in backend');
+        console.log('[Frontend]   4. Verify BASE_URL is correct:', BASE_URL);
+        console.log('=================================================================\n');
+
+    });
+}
+
+    // =========================================================================
+    // STEP 2: SIGN CONTRACT (JSAPI AUTHORIZATION)
+    // =========================================================================
+    function signContract() {
+        if (agreementState.authorizationUrl === '') {
+            console.error('[Frontend] ERROR: Authorization URL not available');
+            console.error('[Frontend] Please click "Prepare Contract" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 2: SIGN CONTRACT (USER AUTHORIZATION)');
+        console.log('=================================================================');
+        console.log('[Frontend] Opening wallet authorization page...');
+        console.log('[Frontend] Authorization URL:', agreementState.authorizationUrl);
+        console.log('[Frontend] Calling AlipayJSBridge.call("qicardSignContract") JSAPI...');
+
+        AlipayJSBridge.call('qicardSignContract', {
+            authUrl: agreementState.authorizationUrl,
+            extParams: {
+                subClientId: (my.getAppClientInfo && my.getAppClientInfo().subClientId) || 'default_sub_client'
+            }
+        }, function(res) {
+            console.log('[Frontend] JSAPI callback received:', JSON.stringify(res, null, 2));
+
+            if (!res.error && !res.errorCode && res.authCode) {
+                console.log('=================================================================');
+                console.log('[Frontend] AUTHORIZATION SUCCESS CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] User authorized the contract!');
+                console.log('[Frontend] Success response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] Auth code received:', res.authCode);
+
+                agreementState.authCode = res.authCode;
+                agreementState.currentStep = 2;
+
+                console.log('[Frontend] Auth code length:', res.authCode.length);
+                console.log('[Frontend] Contract authorization complete');
+                console.log('[Frontend] Next step: Click "Apply Access Token" button');
+                console.log('=================================================================\n');
+
+                enableButton('applyTokenButton');
+                disableButton('executePaymentButton');
+
+            } else {
+                console.log('=================================================================');
+                console.log('[Frontend] AUTHORIZATION FAIL CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Fail response:', JSON.stringify(res, null, 2));
+
+                if (res.errorCode === '6001' || res.error === '6001') {
+                    console.log('[Frontend] User CANCELLED the sign process (code: 6001)');
+                } else if (res.errorCode === '6002' || res.error === '6002') {
+                    console.log('[Frontend] Network ERROR (code: 6002)');
+                } else if (res.errorCode === '6003' || res.error === '6003') {
+                    console.log('[Frontend] Sign FAILED (code: 6003)');
+                } else {
+                    console.log('[Frontend] Other error code:', res.errorCode || res.error);
+                }
+
+                console.log('[Frontend] Error message:', res.errorMessage || res.errMessage || res.message);
+                console.log('=================================================================\n');
+
+            }
+        });
+
+        console.log('[Frontend] Waiting for user to complete authorization in wallet...');
+    }
+
+    // =========================================================================
+    // STEP 3: APPLY ACCESS TOKEN
+    // =========================================================================
+    function applyAccessToken() {
+        if (agreementState.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available');
+            console.error('[Frontend] Please complete contract signing first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 3: APPLY ACCESS TOKEN');
+        console.log('=================================================================');
+        console.log('[Frontend] Exchanging auth code for access token...');
+        console.log('[Frontend] Auth code:', agreementState.authCode);
+        console.log('[Frontend] Sending to backend: POST /api/agreement/apply-token');
+
+        fetch(`${BASE_URL}/api/agreement/apply-token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                authCode: agreementState.authCode
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] SUCCESS: Access token received');
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object' && data.accessToken) {
+                agreementState.accessToken = data.accessToken;
+                agreementState.refreshToken = data.refreshToken;
+                agreementState.tokenExpiry = data.accessTokenExpiryTime;
+                agreementState.currentStep = 3;
+
+                console.log('[Frontend] Access Token:', data.accessToken.substring(0, 20) + '...');
+                console.log('[Frontend] Refresh Token:', data.refreshToken ? data.refreshToken.substring(0, 20) + '...' : 'N/A');
+                console.log('[Frontend] Token Expiry:', data.accessTokenExpiryTime);
+                console.log('[Frontend] Token exchange complete');
+                console.log('[Frontend] IMPORTANT: Backend must store this token in database!');
+                console.log('[Frontend] Next step: Click "Execute Agreement Payment" button');
+                console.log('=================================================================\n');
+
+                enableButton('executePaymentButton');
+
+            } else {
+                console.error('[Frontend] ERROR: No access token in response');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to apply access token');
+            console.error('[Frontend] Error details:', error);
+            console.log('[Frontend] Note: Backend endpoint /api/agreement/apply-token must be implemented');
+            console.log('=================================================================\n');
+
+        });
+    }
+
+    // =========================================================================
+    // STEP 4: EXECUTE AGREEMENT PAYMENT
+    // =========================================================================
+    function executeAgreementPayment() {
+        if (agreementState.accessToken === '') {
+            console.error('[Frontend] ERROR: Access token not available');
+            console.error('[Frontend] Please complete all previous steps first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 4: EXECUTE AGREEMENT PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Initiating automatic payment...');
+        console.log('[Frontend] Using access token (first 20 chars):', agreementState.accessToken.substring(0, 20) + '...');
+        console.log('[Frontend] Sending to backend: POST /api/agreement/pay');
+
+        const paymentData = {
+            accessToken: agreementState.accessToken,
+            amount: 1000, // 1 IQD (example)
+            currency: 'IQD',
+            orderDescription: 'Monthly subscription payment'
+        };
+
+        console.log('[Frontend] Payment details:', JSON.stringify({
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            description: paymentData.orderDescription
+        }, null, 2));
+
+        fetch(`${BASE_URL}/api/agreement/pay`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(paymentData)
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] SUCCESS: Payment response received');
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                if (data.resultStatus === 'S' && data.resultCode === 'SUCCESS') {
+                    agreementState.paymentId = data.paymentId;
+                    agreementState.paymentAmount = paymentData.amount;
+
+                    console.log('[Frontend] Payment SUCCESSFUL');
+                    console.log('[Frontend] Payment ID:', data.paymentId);
+                    console.log('[Frontend] Payment Time:', data.paymentTime);
+                    console.log('[Frontend] Amount charged:', paymentData.amount, paymentData.currency);
+                    console.log('[Frontend] WARNING: No user interaction required - payment auto-deducted!');
+                    console.log('[Frontend] User will receive notification via SMS/Email/Inbox');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'U') {
+                    console.log('[Frontend] Payment status UNKNOWN (U)');
+                    console.log('[Frontend] Backend should poll /v1/payments/inquiryPayment for status');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'F') {
+                    console.log('[Frontend] Payment FAILED (F)');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+                    console.log('=================================================================\n');
+
+                }
+            } else {
+                console.error('[Frontend] ERROR: Invalid response format');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to execute payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('[Frontend] Note: Backend endpoint /api/agreement/pay must be implemented');
+            console.log('=================================================================\n');
+
+        });
+    }
+
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+    function enableButton(buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        }
+    }
+
+    function disableButton(buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.style.cursor = 'not-allowed';
+        }
+    }
+
+    // =========================================================================
+    // ON PAGE LOAD
+    // =========================================================================
+    window.addEventListener('load', () => {
+        console.log('=================================================================');
+        console.log('[Frontend] Agreement Payment Page Loaded');
+        console.log('=================================================================');
+        console.log('[Frontend] This page demonstrates the Agreement Payment flow:');
+        console.log('[Frontend] Step 1: Prepare contract → Get authUrl');
+        console.log('[Frontend] Step 2: Sign contract → Get authCode (JSAPI)');
+        console.log('[Frontend] Step 3: Apply token → Get accessToken');
+        console.log('[Frontend] Step 4: Execute payment → Auto-deduct from wallet');
+        console.log('[Frontend]');
+        console.log('[Frontend] Click buttons in order to complete the flow');
+        console.log('=================================================================\n');
+    });
+</script>
+
+</html>

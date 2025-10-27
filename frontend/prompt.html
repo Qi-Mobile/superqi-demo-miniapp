@@ -1,0 +1,45 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="prompt()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Prompt</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function prompt() {
+        my.prompt({
+            title: 'Title',
+            message: 'Explain the current status and prompt the user solution. It is best not to exceed two lines.',
+            placeholder: 'Leave a message to a friend',
+            okButtonText: 'Confirm',
+            cancelButtonText: 'Cancel',
+            success: (result) => {
+                console.log(JSON.stringify(result));
+            },
+            fail: (result) => {
+                console.log(JSON.stringify(result));
+            },
+        });
+    }
+</script>
+
+</html>

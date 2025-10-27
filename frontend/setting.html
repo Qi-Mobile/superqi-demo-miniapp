@@ -1,0 +1,139 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <div class="mb-2">
+                <h3 class="text-lg font-bold mb-2">User Authorization Settings</h3>
+                <div id="authSettings" class="text-sm">
+                    <p>Use "Get Settings" to retrieve current authorization status, or "Open Settings" to open the settings page</p>
+                </div>
+            </div>
+            <button onclick="getSettings()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Get Settings
+            </button>
+            <button onclick="openSettings()" class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Open Settings
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    window.onload = function() {
+        getSettings();
+    };
+
+    function getSettings() {
+        console.log('getSettings called');
+        
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.getSetting !== 'function') {
+            console.error('my.getSetting is not available');
+            console.log('Available methods in my object:', Object.keys(my));
+            return;
+        }
+        
+        console.log('Calling my.getSetting...');
+        my.getSetting({
+            success: (res) => {
+                console.log('getSetting success:', res);
+                displayAuthSettings(res.authSetting);
+            },
+            fail: (res) => {
+                console.log('getSetting fail:', res);
+                my.alert({
+                    title: 'Fail',
+                    content: JSON.stringify(res)
+                });
+            },
+            complete: (res) => {
+                console.log('getSetting complete:', res);
+            }
+        });
+    }
+
+    function openSettings() {
+        console.log('openSettings called');
+        
+        if (typeof my === 'undefined') {
+            console.error('my object is not available. Make sure the bridge is loaded.');
+            return;
+        }
+        
+        if (typeof my.openSetting !== 'function') {
+            console.error('my.openSetting is not available');
+            console.log('Available methods in my object:', Object.keys(my));
+            return;
+        }
+        
+        console.log('Calling my.openSetting...');
+        my.openSetting({
+            success: (res) => {
+                console.log('openSetting success:', res);
+                displayAuthSettings(res.authSetting);
+                my.alert({
+                    title: 'Settings Updated',
+                    content: 'User preferences have been updated from the settings page.'
+                });
+            },
+            fail: (res) => {
+                console.log('openSetting fail:', res);
+                my.alert({
+                    title: 'Fail',
+                    content: JSON.stringify(res)
+                });
+            },
+            complete: (res) => {
+                console.log('openSetting complete:', res);
+            }
+        });
+    }
+
+    function displayAuthSettings(authSetting) {
+        const container = document.getElementById('authSettings');
+        
+        if (!authSetting || Object.keys(authSetting).length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No authorization settings available</p>';
+            return;
+        }
+
+        let html = '<div class="space-y-2">';
+        
+        for (const [scope, granted] of Object.entries(authSetting)) {
+            const statusClass = granted ? 'text-green-600' : 'text-red-600';
+            const statusText = granted ? 'Granted' : 'Denied';
+            
+            html += `
+                <div class="flex justify-between items-center p-2 bg-gray-100 rounded">
+                    <span class="font-medium">${scope}</span>
+                    <span class="${statusClass} font-bold">${statusText}</span>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+</script>
+
+</html>
