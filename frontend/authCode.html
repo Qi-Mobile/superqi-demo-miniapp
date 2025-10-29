@@ -61,7 +61,7 @@
     function getAuthCode() {
         console.log('[Frontend] Requesting auth code from wallet...');
         my.getAuthCode({
-            scopes: ['auth_base', 'USER_ID', 'HASH_LOGIN_ID', 'USER_LOGIN_ID'],
+            scopes: ['auth_base', 'USER_ID'],
             success: (res) => {
                 console.log('[Frontend] SUCCESS: Auth code retrieved');
                 console.log('[Frontend] Auth code:', res.authCode);
