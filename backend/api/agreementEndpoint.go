@@ -26,6 +26,7 @@ type applyAccessTokenRequest struct {
 
 type executeAgreementPaymentRequest struct {
 	AccessToken      string `json:"accessToken" validate:"required"`
+	CustomerID       string `json:"customerId" validate:"required"`
 	Amount           int64  `json:"amount" validate:"required"`
 	Currency         string `json:"currency"`
 	OrderDescription string `json:"orderDescription"`
@@ -246,6 +247,7 @@ func handleExecuteAgreementPayment(ctx *fiber.Ctx) error {
 
 	log.Printf("[Backend] SUCCESS: Request parsed successfully\n")
 	log.Printf("[Backend] Access Token (first 20 chars): %s...\n", truncateString(request.AccessToken, 20))
+	log.Printf("[Backend] Customer ID: %s\n", request.CustomerID)
 	log.Printf("[Backend] Amount: %d %s\n", request.Amount, request.Currency)
 	log.Printf("[Backend] Order Description: %s\n", request.OrderDescription)
 	log.Println("[Backend] -----------------------------------------------------------")
@@ -270,9 +272,19 @@ func handleExecuteAgreementPayment(ctx *fiber.Ctx) error {
 		})
 	}
 
+	if request.CustomerID == "" {
+		log.Println("[Backend] ERROR: Customer ID is required")
+		log.Println("=================================================================")
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"success":       false,
+			"resultStatus":  "F",
+			"resultMessage": "Customer ID is required",
+		})
+	}
+
 	log.Println("[Backend] Executing agreement payment...")
 
-	paymentResponse, err := executeAgreementPaymentInternal(request.AccessToken, request.Amount, request.Currency, request.OrderDescription)
+	paymentResponse, err := executeAgreementPaymentInternal(request.AccessToken, request.CustomerID, request.Amount, request.Currency, request.OrderDescription)
 	if err != nil {
 		log.Printf("[Backend] ERROR: Failed to execute payment: %v\n", err)
 		log.Println("=================================================================")
@@ -294,29 +306,34 @@ func handleExecuteAgreementPayment(ctx *fiber.Ctx) error {
 // INTERNAL HELPER FUNCTIONS
 // =========================================================================
 
-func executeAgreementPaymentInternal(accessToken string, amount int64, currency string, orderDescription string) (alipay.PaymentResponse, error) {
+func executeAgreementPaymentInternal(accessToken string, customerID string, amount int64, currency string, orderDescription string) (alipay.PaymentResponse, error) {
 	log.Println("[Backend] Preparing agreement payment request...")
+	log.Printf("[Backend] Using Customer ID: %s\n", customerID)
 
 	paymentRequestID := fmt.Sprintf("AGREEMENT-PAY-%s-%d", uuid.New().String(), time.Now().Unix())
 	log.Printf("[Backend] Generated Payment Request ID: %s\n", paymentRequestID)
 
 	expiryTime := time.Now().Add(30 * time.Minute).Format("2006-01-02T15:04:05-07:00")
 
+	// base URL for notification
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
 		baseURL = "http://localhost:1999"
 	}
 
 	paymentRequest := alipay.PaymentRequest{
-		ProductCode:      alipay.AGREEMENT_PAYMENT, // Important: Use agreement payment product code
+		ProductCode:      alipay.AGREEMENT_PAYMENT,
 		PaymentRequestID: paymentRequestID,
-		PaymentAuthCode:  accessToken, // This is the key difference - we use accessToken here
+		PaymentAuthCode:  accessToken,
 		PaymentAmount: alipay.PaymentAmount{
 			Currency: currency,
 			Value:    fmt.Sprintf("%d", amount),
 		},
 		Order: alipay.Order{
 			OrderDescription: orderDescription,
+			Buyer: alipay.OrderBuyer{
+				ReferenceBuyerID: customerID,
+			},
 		},
 		PaymentExpiryTime: expiryTime,
 		PaymentNotifyURL:  baseURL + "/api/webhook/payment-notify",
@@ -335,12 +352,13 @@ func executeAgreementPaymentInternal(accessToken string, amount int64, currency 
 	responseJSON, _ := json.MarshalIndent(paymentResponse, "", "  ")
 	log.Printf("[Backend] Payment API response:\n%s\n", string(responseJSON))
 
+	// Log payment status
 	switch paymentResponse.Result.ResultStatus {
 	case "S":
 		log.Println("[Backend] SUCCESS: Payment completed immediately")
 		log.Printf("[Backend] Payment ID: %s\n", paymentResponse.PaymentID)
 		log.Printf("[Backend] Payment Time: %s\n", paymentResponse.PaymentTime)
-		log.Println("[Backend] WARNING: Money deducted from user's wallet automatically!")
+		log.Println("[Backend] Money deducted from user's wallet automatically!")
 
 	case "U":
 		log.Println("[Backend] WARNING: Payment status unknown")

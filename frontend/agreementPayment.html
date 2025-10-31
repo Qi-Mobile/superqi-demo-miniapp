@@ -11,7 +11,7 @@
     <div class="flex flex-col w-full h-full min-h-full">
         <miniapp-header></miniapp-header>
 
-        <h1 class="text-2xl font-bold">To be implemented</h1>
+        <p>Agreement Payment is restricted to only a few merchants</p>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
             <button onclick="prepareContract()"
@@ -58,14 +58,15 @@
     const agreementState = {
         authorizationUrl: '',
         authCode: '',
-        
+
         accessToken: '',
         refreshToken: '',
         tokenExpiry: '',
-        
+        customerId: '',
+
         paymentId: '',
         paymentAmount: 0,
-        
+
         currentStep: 0
     };
 
@@ -236,9 +237,7 @@
 
         AlipayJSBridge.call('qicardSignContract', {
             authUrl: agreementState.authorizationUrl,
-            extParams: {
-                subClientId: (my.getAppClientInfo && my.getAppClientInfo().subClientId) || 'default_sub_client'
-            }
+            extParams: {}
         }, function(res) {
             console.log('[Frontend] JSAPI callback received:', JSON.stringify(res, null, 2));
 
@@ -324,11 +323,13 @@
                 agreementState.accessToken = data.accessToken;
                 agreementState.refreshToken = data.refreshToken;
                 agreementState.tokenExpiry = data.accessTokenExpiryTime;
+                agreementState.customerId = data.customerId;
                 agreementState.currentStep = 3;
 
                 console.log('[Frontend] Access Token:', data.accessToken.substring(0, 20) + '...');
                 console.log('[Frontend] Refresh Token:', data.refreshToken ? data.refreshToken.substring(0, 20) + '...' : 'N/A');
                 console.log('[Frontend] Token Expiry:', data.accessTokenExpiryTime);
+                console.log('[Frontend] Customer ID:', data.customerId);
                 console.log('[Frontend] Token exchange complete');
                 console.log('[Frontend] IMPORTANT: Backend must store this token in database!');
                 console.log('[Frontend] Next step: Click "Execute Agreement Payment" button');
@@ -365,11 +366,13 @@
         console.log('=================================================================');
         console.log('[Frontend] Initiating automatic payment...');
         console.log('[Frontend] Using access token (first 20 chars):', agreementState.accessToken.substring(0, 20) + '...');
+        console.log('[Frontend] Customer ID:', agreementState.customerId);
         console.log('[Frontend] Sending to backend: POST /api/agreement/pay');
 
         const paymentData = {
             accessToken: agreementState.accessToken,
-            amount: 1000, // 1 IQD (example)
+            customerId: agreementState.customerId,
+            amount: 1000, 
             currency: 'IQD',
             orderDescription: 'Monthly subscription payment'
         };
