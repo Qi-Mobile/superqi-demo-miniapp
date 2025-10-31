@@ -1,0 +1,120 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Authentication</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getAuthCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                Auth Code</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="copyToClipboard()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Copy to Clipboard</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="applyCode()" class="bg-red-400 text-white px-4 py-2 font-bold w-full rounded-md">Apply
+                Code</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    const state = {
+        authCode: '',
+        token: ''
+    }
+
+    function getAuthCode() {
+        console.log('[Frontend] Requesting auth code from wallet...');
+        my.getAuthCode({
+            scopes: ['auth_base', 'USER_ID'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+                state.authCode = res.authCode;
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+            },
+        });
+    }
+
+    function copyToClipboard() {
+        if (state.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available - click "Get Auth Code" first');
+            return;
+        }
+
+        console.log('[Frontend] Copying auth code to clipboard...');
+        my.setClipboard({
+            text: state.authCode,
+            success: () => {
+                console.log('[Frontend] SUCCESS: Auth code copied to clipboard');
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code copy failed');
+                console.error('[Frontend] Error message:', res.errorMessage);
+            },
+        });
+    }
+
+    function applyCode() {
+        if (state.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available - click "Get Auth Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STARTING TOKEN EXCHANGE');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending auth code to backend...');
+        console.log('[Frontend] Request body:', { auth_code: state.authCode });
+
+        fetch(`${BASE_URL}/api/auth/apply-token`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'auth_code': state.authCode,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Response received from backend');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object') {
+                state.token = data.token;
+                console.log('[Frontend] Token saved to state');
+                console.log('[Frontend] Authentication complete!');
+                console.log('[Frontend] Check the backend logs for the user data received');
+            }
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed during token exchange');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+</script>
+
+</html>
