@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "vite": "^7.1.7"
+  },
+  "dependencies": {
+    "@khalidsheet/remote-logger-client": "^1.1.0"
   }
 }

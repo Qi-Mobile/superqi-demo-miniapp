@@ -100,6 +100,7 @@ class Header extends HTMLElement {
             'scan.html': 'category-device.html',
             'getBatteryInfo.html': 'category-device.html',
             'agreementPayment.html': 'category-auth.html',
+            'openBrowser.html': 'category-network.html',
         };
         return pageCategories[filename] || null;
     }
@@ -146,6 +147,7 @@ class Header extends HTMLElement {
             'scan.html': 'Scan QR Code',
             'getBatteryInfo.html': 'Get Battery Info',
             'agreementPayment.html': 'Agreement Payment',
+            'openBrowser.html': 'Open Browser',
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
