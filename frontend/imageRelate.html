@@ -1,0 +1,108 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="testAPI()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Test Preview API</button>
+            <button onclick="testSaveAPI()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Test Save API</button>
+        </div>
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+<script>
+    function testAPI() {
+        console.log('Step 1: Choosing images...');
+        
+        // First, let user choose images
+        my.chooseImage({
+            sourceType: ['camera', 'album'],
+            count: 2,
+            success: (res) => {
+                console.log('✓ chooseImage success:', JSON.stringify(res));
+                
+                // Extract the URLs from the chosen images
+                const imageUrls = res.tempFilePaths || res.apFilePaths || [];
+                
+                if (imageUrls.length > 0) {
+                    console.log('Step 2: Previewing selected images...');
+                    
+                    // Now preview the selected images
+                    my.previewImage({
+                        current: 0,
+                        urls: imageUrls,
+                        success: (previewRes) => {
+                            console.log('✓ previewImage success:', JSON.stringify(previewRes));
+                        },
+                        fail: (previewErr) => {
+                            console.error('✗ previewImage failed:', JSON.stringify(previewErr));
+                        },
+                        complete: () => {
+                            console.log('previewImage complete');
+                        }
+                    });
+                } else {
+                    console.error('No images were selected');
+                }
+            },
+            fail: (err) => {
+                console.error('✗ chooseImage failed:', JSON.stringify(err));
+            }
+        });
+    }
+
+    function testSaveAPI() {
+        console.log('Step 1: Choosing image to save...');
+        
+        // First, let user choose an image
+        my.chooseImage({
+            sourceType: ['camera', 'album'],
+            count: 1,
+            success: (res) => {
+                console.log('✓ chooseImage success:', JSON.stringify(res));
+                
+                // Extract the URL from the chosen image
+                const imageUrls = res.tempFilePaths || res.apFilePaths || [];
+                
+                if (imageUrls.length > 0) {
+                    const imageUrl = imageUrls[0];
+                    console.log('Step 2: Saving image to gallery...');
+                    console.log('Image URL:', imageUrl);
+                    
+                    // Save the selected image to device gallery
+                    my.saveImage({
+                        url: imageUrl,
+                        showActionSheet: true,
+                        success: (saveRes) => {
+                            console.log('✓ saveImage success:', JSON.stringify(saveRes));
+                            console.log('Image saved to gallery successfully!');
+                        },
+                        fail: (saveErr) => {
+                            console.error('✗ saveImage failed:', JSON.stringify(saveErr));
+                        },
+                        complete: () => {
+                            console.log('saveImage complete');
+                        }
+                    });
+                } else {
+                    console.error('No image was selected');
+                }
+            },
+            fail: (err) => {
+                console.error('✗ chooseImage failed:', JSON.stringify(err));
+            }
+        });
+    }
+</script>
+</html>

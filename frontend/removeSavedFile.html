@@ -1,0 +1,84 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Test getSavedFileInfo API</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="removeSavedFile()"
+                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Remove Saved File</button>
+        </div>
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+<script>
+    let savedFilePath = null;
+
+    function removeSavedFile() {
+        console.log('Testing my.removeSavedFile API...');
+        console.log('First, we need to save a file to test removal');
+        
+        my.chooseImage({
+            success: (res) => {
+                console.log('Image chosen successfully');
+                console.log('Temp file path:', res.apFilePaths[0]);
+                
+                my.saveFile({
+                    apFilePath: res.apFilePaths[0],
+                    success: (result) => {
+                        console.log('File saved successfully!');
+                        console.log('Saved file path:', result.apFilePath);
+                        savedFilePath = result.apFilePath;
+                        
+                        my.getSavedFileList({
+                            success: (listRes) => {
+                                console.log('Current saved files:', listRes.fileList.length);
+                                console.log('File list:', listRes.fileList.map(f => f.apFilePath));
+                                
+                                console.log('Now removing the saved file...');
+                                my.removeSavedFile({
+                                    apFilePath: result.apFilePath,
+                                    success: (removeRes) => {
+                                        console.log('File removed successfully!');
+                                        console.log('Response:', removeRes);
+                                        
+                                        my.getSavedFileList({
+                                            success: (verifyRes) => {
+                                                console.log('Verification: Current saved files:', verifyRes.fileList.length);
+                                                console.log('File list after removal:', verifyRes.fileList.map(f => f.apFilePath));
+                                            }
+                                        });
+                                    },
+                                    fail: (error) => {
+                                        console.log('✗ Failed to remove file');
+                                        console.log('Error:', error);
+                                    },
+                                    complete: () => {
+                                        console.log('removeSavedFile completed');
+                                    }
+                                });
+                            }
+                        });
+                    },
+                    fail: (error) => {
+                        console.log('Failed to save file');
+                        console.log('Error:', error);
+                    }
+                });
+            },
+            fail: (error) => {
+                console.log('Failed to choose image');
+                console.log('Error:', error);
+            }
+        });
+    }
+</script>
+</html>

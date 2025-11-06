@@ -87,7 +87,7 @@ class Header extends HTMLElement {
             'request.html': 'category-network.html',
             'downloadFile.html': 'category-network.html',
             'getSystemInfo.html': 'category-device.html',
-            'getNetworkType.html': 'category-device.html',
+            'getNetworkType.html': 'category-network.html',
             'clipboard.html': 'category-device.html',
             'setClipboard.html': 'category-device.html',
             'vibrate.html': 'category-device.html',
@@ -101,6 +101,8 @@ class Header extends HTMLElement {
             'getBatteryInfo.html': 'category-device.html',
             'agreementPayment.html': 'category-auth.html',
             'openBrowser.html': 'category-network.html',
+            'imageRelate.html': 'category-media.html',
+            'removeSavedFile.html': 'category-file.html',
         };
         return pageCategories[filename] || null;
     }
@@ -148,6 +150,8 @@ class Header extends HTMLElement {
             'getBatteryInfo.html': 'Get Battery Info',
             'agreementPayment.html': 'Agreement Payment',
             'openBrowser.html': 'Open Browser',
+            'imageRelate.html': 'Preview and Save Image',
+            'removeSavedFile.html': 'Remove Saved File',
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
