@@ -56,6 +56,7 @@ class Header extends HTMLElement {
             'category-location.html': 'Location',
             'category-network.html': 'Network',
             'category-device.html': 'Device',
+            'category-messages.html': 'Messages',
         };
         return map[filename] || '';
     }
@@ -103,6 +104,7 @@ class Header extends HTMLElement {
             'openBrowser.html': 'category-network.html',
             'imageRelate.html': 'category-media.html',
             'removeSavedFile.html': 'category-file.html',
+            'sendInBox.html': 'category-messages.html',
         };
         return pageCategories[filename] || null;
     }
@@ -152,6 +154,7 @@ class Header extends HTMLElement {
             'openBrowser.html': 'Open Browser',
             'imageRelate.html': 'Preview and Save Image',
             'removeSavedFile.html': 'Remove Saved File',
+            'sendInBox.html': 'Send Notification',
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
