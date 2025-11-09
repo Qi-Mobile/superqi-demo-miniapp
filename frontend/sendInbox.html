@@ -10,28 +10,210 @@
 </head>
 
 <body>
-    <d class="flex flex-col w-full h-full min-h-full">
+    <div class="flex flex-col w-full h-full min-h-full">
         <miniapp-header></miniapp-header>
 
         <p class="text-sm text-gray-500 p-4">
-
+            You need NOTIFICATION_INBOX scope to send notifications to the user.
         </p>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
-            <button onclick="sendInBox()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Send
-                In Box</button>
+            <button onclick="getAuthCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Get Auth Code
+            </button>
+            <button onclick="applyCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Apply Code
+            </button>
+        </div>
+
+        <div class="border-t border-gray-300 my-4"></div>
+
+        <div class="flex flex-col gap-4 mb-4 px-4">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">Title:</label>
+                <input id="notifTitle" type="text" placeholder="Enter notification title" value="Welcome to SuperQi"
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">Content:</label>
+                <textarea id="notifContent" placeholder="Enter notification message" rows="3"
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm">LETS GO MINIAPP TEAM!!!</textarea>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">Deep Link URL (Optional):</label>
+                <input id="notifUrl" type="text" placeholder="mini://platformapi/startapp?_ariver_appid=888888"
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm" />
+            </div>
+
+            <button onclick="sendInBox()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Send Inbox Notification
+            </button>
         </div>
 
         <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
             <miniapp-console class="w-full h-full"></miniapp-console>
         </section>
-        </div>
+    </div>
 </body>
 
 <script>
-    function sendInBox() {
+    const state = {
+        authCode: '',
+        token: ''
     }
 
+    function getAuthCode() {
+        console.log('[Frontend] Requesting auth code from wallet...');
+
+        my.getAuthCode({
+            scopes: ['auth_base', 'USER_ID', 'NOTIFICATION_INBOX'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+
+                state.authCode = res.authCode;
+
+                console.log('[Frontend] Auth code saved to state');
+                console.log('[Frontend] Next step: Click "Apply Code" button');
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+            },
+        });
+    }
+
+    function applyCode() {
+        if (state.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STARTING TOKEN EXCHANGE');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending auth code to backend...');
+        console.log('[Frontend] Request body:', { auth_code: state.authCode });
+
+        fetch(`${BASE_URL}/api/auth/apply-token`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'auth_code': state.authCode,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Response received from backend');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object' && data.token) {
+                state.token = data.token;
+
+                console.log('[Frontend] Token saved to state');
+                console.log('[Frontend] Authentication complete');
+                console.log('[Frontend] Next step: Fill in notification details and click "Send Inbox Notification"');
+
+            } else {
+                console.error('[Frontend] ERROR: No token in response');
+            }
+
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed during token exchange');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function sendInBox() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available');
+            return;
+        }
+
+        const title = document.getElementById('notifTitle').value.trim();
+        const content = document.getElementById('notifContent').value.trim();
+        const url = document.getElementById('notifUrl').value.trim();
+
+        if (!title || !content) {
+            console.error('[Frontend] ERROR: Title and content are required');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] SENDING INBOX NOTIFICATION');
+        console.log('=================================================================');
+        console.log('[Frontend] Preparing notification request...');
+        console.log('[Frontend] Title:', title);
+        console.log('[Frontend] Content:', content);
+        console.log('[Frontend] URL:', url || '(using default)');
+
+        const notificationData = {
+            token: state.token,
+            title: title,
+            content: content,
+            url: url || 'mini://platformapi/startapp?_ariver_appid=888888'
+        };
+
+        console.log('[Frontend] Sending request to backend...');
+
+        fetch(`${BASE_URL}/api/notification/send-inbox`, {
+            method: 'POST',
+            body: JSON.stringify(notificationData),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Response received from backend');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object') {
+                if (data.status === 'SUCCESS' || data.resultStatus === 'S' || data.resultStatus === 'A') {
+                    console.log('[Frontend] Notification sent successfully');
+
+                    if (data.messageId) {
+                        console.log('[Frontend] Message ID:', data.messageId);
+                    }
+
+                    console.log('[Frontend] User should receive notification in their wallet inbox');
+
+                } else if (data.status === 'UNKNOWN' || data.resultStatus === 'U') {
+                    console.log('[Frontend] Notification status unknown');
+                    console.log('[Frontend] The notification may still be processing');
+
+                } else if (data.status === 'FAILED' || data.resultStatus === 'F') {
+                    console.log('[Frontend] Notification failed');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+
+                } else {
+                    console.log('[Frontend] Unexpected response format:', data);
+
+                }
+            } else {
+                console.error('[Frontend] ERROR: Non-JSON response received');
+                console.error('[Frontend] Response:', data);
+
+            }
+
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to send notification');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
 </script>
 
 </html>
