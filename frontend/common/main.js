@@ -1,4 +1,4 @@
-const BASE_URL = "http://172.20.10.2:1999";
+const BASE_URL = "http://192.168.68.107:1999";
 
 class Header extends HTMLElement {
     constructor() {
@@ -185,7 +185,7 @@ class Console extends HTMLElement {
 
     setupConsoleInterceptor() {
         const methods = ['log', 'warn', 'error', 'info', 'debug'];
-        
+
         methods.forEach(method => {
             this.originalConsole[method] = console[method];
             console[method] = (...args) => {
@@ -212,14 +212,14 @@ class Console extends HTMLElement {
         const consoleOutput = this.shadowRoot.querySelector('#console-output');
         if (consoleOutput) {
             const wrapClass = this.horizontalScrollEnabled ? '' : ' wrap-mode';
-            consoleOutput.innerHTML = this.logs.map(log => 
+            consoleOutput.innerHTML = this.logs.map(log =>
                 `<div class="console-entry console-${log.type} mb-1${wrapClass}">
 <span class="console-timestamp text-gray-500 mr-2">[${log.timestamp}]</span>
 <span class="console-type font-bold mr-2">[${log.type.toUpperCase()}] - <span class="console-message text-white">${log.message}</span></span>
 </div>`
             ).join('');
             consoleOutput.scrollTop = consoleOutput.scrollHeight;
-            
+
             // Update the toggle button state
             this.updateScrollMode();
         }
@@ -238,7 +238,7 @@ class Console extends HTMLElement {
     updateScrollMode() {
         const consoleEntries = this.shadowRoot.querySelectorAll('.console-entry');
         const toggleButton = this.shadowRoot.querySelector('#scroll-toggle');
-        
+
         if (this.horizontalScrollEnabled) {
             consoleEntries.forEach(entry => entry.classList.remove('wrap-mode'));
             if (toggleButton) {
@@ -257,7 +257,7 @@ class Console extends HTMLElement {
     applyInitialCollapsedState() {
         const container = this.shadowRoot.querySelector('#console-container');
         const collapseButton = this.shadowRoot.querySelector('#collapse-button');
-        
+
         if (this.isCollapsed) {
             container.classList.add('collapsed');
             collapseButton.classList.add('collapsed');
@@ -269,7 +269,7 @@ class Console extends HTMLElement {
         this.isCollapsed = !this.isCollapsed;
         const container = this.shadowRoot.querySelector('#console-container');
         const collapseButton = this.shadowRoot.querySelector('#collapse-button');
-        
+
         if (this.isCollapsed) {
             container.classList.add('collapsed');
             collapseButton.classList.add('collapsed');
