@@ -29,6 +29,7 @@ func main() {
 	api.InitPaymentEndpoint(apiGroup)
 	api.InitRefundEndpoint(apiGroup)
 	api.InitAgreementEndpoint(apiGroup)
+	api.InitNotificationEndpoint(apiGroup)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {

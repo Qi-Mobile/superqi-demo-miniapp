@@ -148,3 +148,21 @@ type PrepareAuthorizationResponse struct {
 	Result  Result `json:"result"`
 	AuthURL string `json:"authUrl"`
 }
+
+// inbox template related types below
+type InboxTemplate struct {
+	TemplateParameters map[string]string `json:"templateParameters"`
+}
+
+type SendInboxRequest struct {
+	AccessToken  string          `json:"accessToken"`
+	RequestID    string          `json:"requestId"`
+	TemplateCode string          `json:"templateCode"`
+	Templates    []InboxTemplate `json:"templates"`
+}
+
+type SendInboxResponse struct {
+	Result     Result `json:"result"`
+	MessageID  string `json:"messageId,omitempty"`
+	ExtendInfo string `json:"extendInfo,omitempty"`
+}
