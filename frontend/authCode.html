@@ -29,7 +29,7 @@
         </div>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
-            <button id="payButton" onclick="createPayment()" 
+            <button id="payButton" onclick="createPayment()"
                 class="bg-purple-400 text-white px-4 py-2 font-bold w-full rounded-md"
                 style="background-color: #a78bfa;">
                 Pay
@@ -37,9 +37,16 @@
         </div>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
-            <button id="refundButton" onclick="requestRefund()" 
+            <button id="refundButton" onclick="requestRefund()"
                 class="bg-orange-500 text-white px-4 py-2 font-bold w-full rounded-md">
                 Refund
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="inquiryButton" onclick="inquirePayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Check Payment Status (Inquiry)
             </button>
         </div>
 
@@ -55,7 +62,7 @@
         token: '',
         paymentUrl: '',
         paymentId: '',
-        paymentAmount: 0  
+        paymentAmount: 0
     }
 
     function getAuthCode() {
@@ -148,11 +155,21 @@
         console.log('=================================================================');
         console.log('[Frontend] Sending token to backend for payment creation...');
 
+        // Example: sending optional product tracking data
+        const paymentData = {
+            'token': state.token,
+            // Optional fields for tracking what user is buying:
+            // 'productId': 'PRODUCT-123',
+            // 'quantity': 2,
+            // 'orderId': 'ORDER-456',
+            // 'customData': { 'category': 'electronics', 'sku': 'SKU-789' }
+        };
+
+        console.log('[Frontend] Payment request data:', paymentData);
+
         fetch(`${BASE_URL}/api/payment/create`, {
             method: 'POST',
-            body: JSON.stringify({
-                'token': state.token,
-            }),
+            body: JSON.stringify(paymentData),
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -173,7 +190,7 @@
                 console.log('[Frontend] Payment created successfully');
                 console.log('[Frontend] Automatically opening payment cashier...');
                 console.log('=================================================================\n');
-                
+
                 // Automatically redirect to payment
                 goToPayment();
             } else {
@@ -208,7 +225,7 @@
                 console.log('=================================================================');
                 console.log('[Frontend] Success response:', JSON.stringify(res, null, 2));
                 console.log('[Frontend] Result code:', res.resultCode);
-                
+
                 if (res.resultCode === '9000') {
                     console.log('[Frontend] Payment SUCCESSFUL (code: 9000)');
                 } else if (res.resultCode === '8000') {
@@ -226,7 +243,7 @@
                 console.log('=================================================================');
                 console.log('[Frontend] Fail response:', JSON.stringify(res, null, 2));
                 console.log('[Frontend] Result code:', res.resultCode);
-                
+
                 if (res.resultCode === '4000') {
                     console.log('[Frontend] Payment FAILED (code: 4000)');
                 } else if (res.resultCode === '6001') {
@@ -281,7 +298,7 @@
             method: 'POST',
             body: JSON.stringify({
                 paymentId: state.paymentId,
-                amount: state.paymentAmount  
+                amount: state.paymentAmount
             }),
             headers: {
                 'Content-Type': 'application/json',
@@ -327,6 +344,71 @@
                 title: 'Error',
                 content: 'Failed to process refund request. Please try again.',
             });
+            console.log('=================================================================\n');
+        });
+    }
+
+    function inquirePayment() {
+        if (state.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            my.alert({
+                content: 'No payment to inquire. Please create a payment first.',
+            });
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] INQUIRING PAYMENT STATUS');
+        console.log('=================================================================');
+        console.log('[Frontend] Payment ID:', state.paymentId);
+        console.log('[Frontend] Sending inquiry request to backend...');
+
+        fetch(`${BASE_URL}/api/payment/inquiry`, {
+            method: 'POST',
+            body: JSON.stringify({
+                paymentId: state.paymentId
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Inquiry response received');
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                console.log('[Frontend] Payment Status:', data.paymentStatus);
+                console.log('[Frontend] Payment Request ID:', data.paymentRequestId);
+                console.log('[Frontend] Payment Time:', data.paymentTime);
+
+                if (data.extendInfo) {
+                    console.log('=================================================================');
+                    console.log('[Frontend] EXTENDINFO FOUND!');
+                    console.log('=================================================================');
+                    console.log('[Frontend] ExtendInfo:', data.extendInfo);
+
+                    try {
+                        const extendInfoData = JSON.parse(data.extendInfo);
+                        console.log('[Frontend] Parsed ExtendInfo:', JSON.stringify(extendInfoData, null, 2));
+                        console.log('[Frontend] Product ID:', extendInfoData.productId);
+                        console.log('[Frontend] Quantity:', extendInfoData.quantity);
+                        console.log('[Frontend] Order ID:', extendInfoData.orderId);
+                    } catch (e) {
+                        console.log('[Frontend] ExtendInfo is not JSON:', data.extendInfo);
+                    }
+                    console.log('=================================================================');
+                } else {
+                    console.log('[Frontend] No extendInfo in response');
+                }
+
+                console.log('[Frontend] Payment Status:', data.paymentStatus);
+            }
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to inquire payment');
+            console.error('[Frontend] Error details:', error);
             console.log('=================================================================\n');
         });
     }

@@ -14,7 +14,11 @@ import (
 )
 
 type createPaymentRequest struct {
-	Token string `json:"token" validate:"required"`
+	Token      string                 `json:"token" validate:"required"`
+	ProductID  string                 `json:"productId,omitempty"`
+	Quantity   int                    `json:"quantity,omitempty"`
+	OrderID    string                 `json:"orderId,omitempty"`
+	CustomData map[string]interface{} `json:"customData,omitempty"`
 }
 
 func InitPaymentEndpoint(group fiber.Router) {
@@ -37,7 +41,7 @@ func InitPaymentEndpoint(group fiber.Router) {
 
 		log.Printf("[INFO] Creating payment for user ID: %s\n", claims.UserID)
 
-		paymentResponse, err := createTestPayment(claims.UserID)
+		paymentResponse, err := createTestPayment(claims.UserID, request)
 		if err != nil {
 			log.Printf("[ERROR] Failed to create payment: %v\n", err)
 			return fiber.NewError(fiber.StatusInternalServerError, "Failed to create payment: "+err.Error())
@@ -61,9 +65,87 @@ func InitPaymentEndpoint(group fiber.Router) {
 		log.Println("[SUCCESS] Returning payment response to frontend")
 		return ctx.JSON(response)
 	})
+
+	group.Post("/payment/inquiry", func(ctx *fiber.Ctx) error {
+		var request struct {
+			PaymentID        string `json:"paymentId,omitempty"`
+			PaymentRequestID string `json:"paymentRequestId,omitempty"`
+		}
+
+		if err := ctx.BodyParser(&request); err != nil {
+			log.Printf("[ERROR] Invalid request body: %v\n", err)
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		}
+
+		if request.PaymentID == "" && request.PaymentRequestID == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "Either paymentId or paymentRequestId is required")
+		}
+
+		log.Println("=================================================================")
+		log.Println("PAYMENT INQUIRY REQUEST RECEIVED")
+		log.Println("=================================================================")
+		log.Printf("[INFO] Payment ID: %s\n", request.PaymentID)
+		log.Printf("[INFO] Payment Request ID: %s\n", request.PaymentRequestID)
+
+		inquiryRequest := alipay.InquiryPaymentRequest{
+			PaymentID:        request.PaymentID,
+			PaymentRequestID: request.PaymentRequestID,
+		}
+
+		inquiryResponse, err := alipay.Interface.InquiryPayment(inquiryRequest)
+		if err != nil {
+			log.Printf("[ERROR] Failed to inquiry payment: %v\n", err)
+			return fiber.NewError(fiber.StatusInternalServerError, "Failed to inquiry payment: "+err.Error())
+		}
+
+		log.Println("=================================================================")
+		log.Println("PAYMENT INQUIRY RESPONSE")
+		log.Println("=================================================================")
+		responseJSON, _ := json.MarshalIndent(inquiryResponse, "", "  ")
+		log.Printf("%s\n", string(responseJSON))
+
+		if inquiryResponse.ExtendInfo != "" {
+			log.Println("=================================================================")
+			log.Println("EXTENDINFO DETAILS")
+			log.Println("=================================================================")
+			extendInfoData, err := alipay.ParseExtendInfoMap(inquiryResponse.ExtendInfo)
+			if err != nil {
+				log.Printf("[WARNING] Failed to parse extendInfo: %v\n", err)
+				log.Printf("[INFO] Raw extendInfo: %s\n", inquiryResponse.ExtendInfo)
+			} else {
+				extendInfoJSON, _ := json.MarshalIndent(extendInfoData, "", "  ")
+				log.Printf("Parsed ExtendInfo:\n%s\n", string(extendInfoJSON))
+
+				if productID, ok := extendInfoData["productId"].(string); ok {
+					log.Printf("[TRACKING] Product ID: %s\n", productID)
+				}
+				if quantity, ok := extendInfoData["quantity"].(float64); ok {
+					log.Printf("[TRACKING] Quantity: %.0f\n", quantity)
+				}
+				if orderID, ok := extendInfoData["orderId"].(string); ok {
+					log.Printf("[TRACKING] Order ID: %s\n", orderID)
+				}
+			}
+			log.Println("=================================================================")
+		} else {
+			log.Println("[INFO] No extendInfo in inquiry response")
+		}
+
+		response := fiber.Map{
+			"success":          true,
+			"paymentId":        inquiryResponse.PaymentID,
+			"paymentRequestId": inquiryResponse.PaymentRequestID,
+			"paymentStatus":    inquiryResponse.PaymentStatus,
+			"paymentTime":      inquiryResponse.PaymentTime,
+			"paymentAmount":    inquiryResponse.PaymentAmount,
+			"extendInfo":       inquiryResponse.ExtendInfo,
+		}
+
+		return ctx.JSON(response)
+	})
 }
 
-func createTestPayment(userID string) (alipay.PaymentResponse, error) {
+func createTestPayment(userID string, request createPaymentRequest) (alipay.PaymentResponse, error) {
 	log.Println("=================================================================")
 	log.Printf("CREATING TEST PAYMENT FOR USER: %s\n", userID)
 	log.Println("=================================================================")
@@ -76,6 +158,36 @@ func createTestPayment(userID string) (alipay.PaymentResponse, error) {
 	if baseURL == "" {
 		baseURL = "http://localhost:1999"
 	}
+
+	extendInfoMap := map[string]interface{}{
+		"paymentRequestId": paymentRequestID,
+		"userId":           userID,
+		"timestamp":        time.Now().Unix(),
+	}
+
+	if request.ProductID != "" {
+		extendInfoMap["productId"] = request.ProductID
+	}
+	if request.Quantity > 0 {
+		extendInfoMap["quantity"] = request.Quantity
+	}
+	if request.OrderID != "" {
+		extendInfoMap["orderId"] = request.OrderID
+	}
+
+	if request.CustomData != nil {
+		for key, value := range request.CustomData {
+			extendInfoMap[key] = value
+		}
+	}
+
+	extendInfoJSON, err := json.Marshal(extendInfoMap)
+	if err != nil {
+		log.Printf("[ERROR] Failed to marshal extendInfo: %v\n", err)
+		return alipay.PaymentResponse{}, err
+	}
+
+	log.Printf("[INFO] ExtendInfo: %s\n", string(extendInfoJSON))
 
 	paymentRequest := alipay.PaymentRequest{
 		ProductCode:      alipay.ONLINE_PURCHASE,
@@ -92,6 +204,7 @@ func createTestPayment(userID string) (alipay.PaymentResponse, error) {
 		},
 		PaymentExpiryTime:  expiryTime,
 		PaymentRedirectURL: baseURL + "/payment-success.html",
+		ExtendInfo:         string(extendInfoJSON),
 		// Public URL for payment notifications code should be set here
 	}
 
@@ -121,8 +234,16 @@ func createTestPayment(userID string) (alipay.PaymentResponse, error) {
 		}
 		log.Printf("[INFO] Payment ID: %s\n", paymentResponse.PaymentID)
 		log.Printf("[INFO] Payment Request ID: %s\n", paymentResponse.PaymentRequestID)
+		if paymentResponse.ExtendInfo != "" {
+			log.Printf("[INFO] ExtendInfo returned in response: %s\n", paymentResponse.ExtendInfo)
+		} else {
+			log.Println("[INFO] ExtendInfo not returned in response (this is expected)")
+		}
 	} else if paymentResponse.Result.ResultStatus == "S" {
 		log.Println("[SUCCESS] Payment completed immediately")
+		if paymentResponse.ExtendInfo != "" {
+			log.Printf("[INFO] ExtendInfo returned: %s\n", paymentResponse.ExtendInfo)
+		}
 	} else if paymentResponse.Result.ResultStatus == "U" {
 		log.Println("[WARNING] Unknown payment status - need to query later")
 	} else {

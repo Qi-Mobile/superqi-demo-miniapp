@@ -84,6 +84,7 @@ type PaymentRequest struct {
 	PaymentExpiryTime  string        `json:"paymentExpiryTime,omitempty"`
 	PaymentNotifyURL   string        `json:"paymentNotifyUrl,omitempty"`
 	PaymentRedirectURL string        `json:"paymentRedirectUrl,omitempty"`
+	ExtendInfo         string        `json:"extendInfo,omitempty"`
 }
 
 type RedirectActionForm struct {
@@ -97,6 +98,7 @@ type PaymentResponse struct {
 	PaymentRequestID   string             `json:"paymentRequestId"`
 	PaymentTime        string             `json:"paymentTime,omitempty"`
 	RedirectActionForm RedirectActionForm `json:"redirectActionForm,omitempty"`
+	ExtendInfo         string             `json:"extendInfo,omitempty"`
 }
 
 // below method can be neglected
@@ -165,4 +167,29 @@ type SendInboxResponse struct {
 	Result     Result `json:"result"`
 	MessageID  string `json:"messageId,omitempty"`
 	ExtendInfo string `json:"extendInfo,omitempty"`
+}
+
+// Inquiry Payment - Request and Response
+type InquiryPaymentRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+type Transaction struct {
+	TransactionAmount PaymentAmount `json:"transactionAmount,omitempty"`
+	TransactionID     string        `json:"transactionId,omitempty"`
+	TransactionTime   string        `json:"transactionTime,omitempty"`
+	TransactionType   string        `json:"transactionType,omitempty"`
+	TransactionStatus string        `json:"transactionStatus,omitempty"`
+}
+
+type InquiryPaymentResponse struct {
+	Result           Result        `json:"result"`
+	PaymentID        string        `json:"paymentId,omitempty"`
+	PaymentRequestID string        `json:"paymentRequestId,omitempty"`
+	PaymentAmount    PaymentAmount `json:"paymentAmount,omitempty"`
+	PaymentTime      string        `json:"paymentTime,omitempty"`
+	PaymentStatus    string        `json:"paymentStatus,omitempty"`
+	Transactions     []Transaction `json:"transactions,omitempty"`
+	ExtendInfo       string        `json:"extendInfo,omitempty"`
 }

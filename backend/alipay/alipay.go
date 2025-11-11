@@ -281,3 +281,54 @@ func (client *Client) SendInbox(request SendInboxRequest) (SendInboxResponse, er
 
 	return body, nil
 }
+
+func (client *Client) InquiryPayment(request InquiryPaymentRequest) (InquiryPaymentResponse, error) {
+	const path = "/v1/payments/inquiryPayment"
+
+	log.Println("[Alipay Client] Querying payment status")
+	if request.PaymentID != "" {
+		log.Printf("[Alipay Client] Payment ID: %s", request.PaymentID)
+	}
+	if request.PaymentRequestID != "" {
+		log.Printf("[Alipay Client] Payment Request ID: %s", request.PaymentRequestID)
+	}
+
+	requestJSON, err := json.Marshal(request)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR: Failed to marshal inquiry request: %v", err)
+		return InquiryPaymentResponse{}, err
+	}
+
+	var params map[string]interface{}
+	err = json.Unmarshal(requestJSON, &params)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR: Failed to unmarshal to params: %v", err)
+		return InquiryPaymentResponse{}, err
+	}
+
+	headers, err := client.buildHeaders("POST", path, params)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR: Failed to build headers: %v", err)
+		return InquiryPaymentResponse{}, err
+	}
+
+	response, err := client.sendRequestWithInterface(path, "POST", headers, params)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR: Failed to send inquiry request: %v", err)
+		return InquiryPaymentResponse{}, err
+	}
+
+	var body InquiryPaymentResponse
+	err = json.Unmarshal(response, &body)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR: Failed to unmarshal inquiry response: %v", err)
+		return InquiryPaymentResponse{}, err
+	}
+
+	log.Printf("[Alipay Client] Inquiry response - Status: %s, Payment Status: %s", body.Result.ResultStatus, body.PaymentStatus)
+	if body.ExtendInfo != "" {
+		log.Printf("[Alipay Client] ExtendInfo in inquiry response: %s", body.ExtendInfo)
+	}
+
+	return body, nil
+}
