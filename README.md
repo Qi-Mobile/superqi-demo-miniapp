@@ -81,7 +81,7 @@ We welcome contributions to the Sample Mini App! This project serves as a refere
 
 If you have questions about contributing, feel free to:
 - Open an issue for discussion
-- Check the [SuperQi Developers Guide](https://superqi.qi-mobile.tech/) for platform-specific questions
+- Check the [SuperQi Developers Guide](https://superqi-dev-docs.pages.dev/) for platform-specific questions
 - Review existing code examples for patterns and best practices
 
 
