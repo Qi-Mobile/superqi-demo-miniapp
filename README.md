@@ -1,12 +1,58 @@
-# Sample Mini App
+# SuperQi Mini App Demo
 
-A sample mini application that demonstrates integration with SuperQi's mini app platform, featuring a Go backend with Alipay API integration and an H5 frontend.
+Demo application showing how to integrate with SuperQi's mini app platform. Includes both Go and Node.js backend implementations, plus frontend examples for all major SuperQi Bridge APIs.
 
-## Examples
+## Project Structure
 
-- [authCode](/frontend/authCode.html) - Depending on the usecase, this is usually the first function to execute when opening a Miniapp, it's used to authenticate the customer
-- [chooseImage](/frontend/chooseImage.html) - This shows how the image picket works!
-- More to come soon...
+- `frontend/` - HTML pages demonstrating SuperQi Bridge API functionality
+- `backend-go/` - Go backend with Alipay integration
+- `backend-node/` - Node.js/Express backend with Alipay integration
+
+Both backends provide the same API endpoints. Use whichever fits your stack.
+
+## What's Included
+
+The frontend demo covers these API categories:
+
+**UI Components** - Toast, loading, dialogs, action sheets, date pickers, selectors, keyboard controls, navigation bar, background colors
+
+**Media** - Image and video handling
+
+**Storage** - Local storage operations
+
+**Authentication & Payment** - Auth code flow, token management, payment processing
+
+**File** - File selection, saving, opening documents, file info
+
+**Location** - Geolocation services
+
+**Network** - HTTP requests, file downloads
+
+**Device** - Device info, network type, clipboard, vibration, phone calls, screen controls, battery info, contacts
+
+**Messages** - Notifications
+
+## Running the Demo
+
+### Frontend
+Serve the `frontend/` directory with any static file server. Start at `index.html` to browse all examples.
+
+### Backend
+
+**Go backend:**
+```bash
+cd backend-go
+# See backend-go/README.md for setup
+```
+
+**Node.js backend:**
+```bash
+cd backend-node
+npm install
+cp .env.example .env
+# Configure your credentials in .env
+npm run dev
+```
 
 ## Contribution
 
