@@ -35,23 +35,26 @@ The frontend demo covers these API categories:
 ## Running the Demo
 
 ### Frontend
-Serve the `frontend/` directory with any static file server. Start at `index.html` to browse all examples.
+```bash
+cd frontend
+npm install
+npm run dev -- --host
+```
 
 ### Backend
-
-**Go backend:**
-```bash
-cd backend-go
-# See backend-go/README.md for setup
-```
 
 **Node.js backend:**
 ```bash
 cd backend-node
 npm install
-cp .env.example .env
-# Configure your credentials in .env
 npm run dev
+```
+
+**Go backend:**
+```bash
+cd backend-go
+go mod download
+go run main.go
 ```
 
 ## Contribution
