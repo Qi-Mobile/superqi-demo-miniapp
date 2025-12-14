@@ -91,6 +91,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Related Links
 
-- [SuperQi Developers Guide](https://superqi.qi-mobile.tech/)
+- [SuperQi Developers Guide](https://superqi-dev-docs.pages.dev/)
 - [SuperQI Miniapps Console](https://miniapps.qi.iq/gotoconsole)
 
