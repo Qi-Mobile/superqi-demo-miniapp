@@ -256,4 +256,4 @@ modules.xml
 
 .idea
 res/
-.env
+.env.DS_Store
