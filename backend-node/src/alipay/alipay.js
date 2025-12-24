@@ -149,6 +149,27 @@ async function sendInbox(request) {
     }
 }
 
+async function sendPush(request) {
+    const client = getAlipayClient();
+    const path = '/v1/messages/sendPush';
+
+    console.log('[Alipay Client] Sending push notification');
+    console.log(`[Alipay Client] Request ID: ${request.requestId}`);
+    console.log(`[Alipay Client] Template Code: ${request.templateCode}`);
+
+    try {
+        const headers = client.buildHeaders('POST', path, request);
+        const response = await client.sendRequestWithInterface(path, 'POST', headers, request);
+        const body = JSON.parse(response.toString());
+
+        console.log(`[Alipay Client] SendPush response - Status: ${body.result.resultStatus}, Code: ${body.result.resultCode}`);
+        return body;
+    } catch (err) {
+        console.log(`[Alipay Client] ERROR: ${err.message}`);
+        throw err;
+    }
+}
+
 module.exports = {
     applyToken,
     inquiryUserInfo,
@@ -157,5 +178,6 @@ module.exports = {
     pay,
     refund,
     inquiryRefund,
-    sendInbox
+    sendInbox,
+    sendPush
 };
