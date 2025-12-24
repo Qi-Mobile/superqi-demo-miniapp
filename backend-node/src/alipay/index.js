@@ -8,7 +8,8 @@ const {
     pay,
     refund,
     inquiryRefund,
-    sendInbox
+    sendInbox,
+    sendPush
 } = require('./alipay');
 
 const {
@@ -29,6 +30,7 @@ module.exports = {
     refund,
     inquiryRefund,
     sendInbox,
+    sendPush,
 
     ONLINE_PURCHASE,
     AGREEMENT_PAYMENT,

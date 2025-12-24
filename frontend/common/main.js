@@ -105,6 +105,7 @@ class Header extends HTMLElement {
             'imageRelate.html': 'category-media.html',
             'removeSavedFile.html': 'category-file.html',
             'sendInBox.html': 'category-messages.html',
+            'pushNotification.html': 'category-messages.html'
         };
         return pageCategories[filename] || null;
     }
@@ -154,7 +155,8 @@ class Header extends HTMLElement {
             'openBrowser.html': 'Open Browser',
             'imageRelate.html': 'Preview and Save Image',
             'removeSavedFile.html': 'Remove Saved File',
-            'sendInBox.html': 'Send Notification',
+            'sendInBox.html': 'Send Message',
+            'pushNotification.html': 'Send Notification'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }

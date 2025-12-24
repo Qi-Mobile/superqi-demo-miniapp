@@ -166,3 +166,21 @@ type SendInboxResponse struct {
 	MessageID  string `json:"messageId,omitempty"`
 	ExtendInfo string `json:"extendInfo,omitempty"`
 }
+
+// push notification template related types below
+type PushTemplate struct {
+	TemplateParameters map[string]string `json:"templateParameters"`
+}
+
+type SendPushRequest struct {
+	AccessToken  string         `json:"accessToken"`
+	RequestID    string         `json:"requestId"`
+	TemplateCode string         `json:"templateCode"`
+	Templates    []PushTemplate `json:"templates"`
+}
+
+type SendPushResponse struct {
+	Result     Result `json:"result"`
+	MessageID  string `json:"messageId,omitempty"`
+	ExtendInfo string `json:"extendInfo,omitempty"`
+}
