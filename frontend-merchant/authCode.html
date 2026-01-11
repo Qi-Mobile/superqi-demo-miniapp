@@ -62,20 +62,12 @@
 
     function getDeviceInfo() {
         console.log('[Frontend] Requesting Device info from wallet...');
-        my.call("getDeviceInfo", {
-            success: (res) => {
-                console.log('getDeviceInfo call Success: ', JSON.stringify(res));
-                my.alert({
-                    content: res,
-                });
-            },
-            fail: (res) => {
-                console.log('getDeviceInfo call failed: ', JSON.stringify(res));
-                my.alert({
-                    content: JSON.stringify(res),
-                });
-            },
-        });
+        AlipayJSBridge.call(
+            "getDeviceInfo",
+            {},
+            function (data) {
+                console.log('Result: \n' + JSON.stringify(data))
+            });
     }
 
     function getAuthCode() {
