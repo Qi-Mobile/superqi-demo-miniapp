@@ -1,0 +1,117 @@
+<template>
+    <link rel="stylesheet" href="/common/style.css">
+    <style>
+        :host {
+            display: block;
+            width: 100%;
+            height: 100%;
+            font-family: var(--default-mono-font-family, monospace);
+        }
+
+        .console-entry {
+            white-space: nowrap;
+            overflow-x: visible;
+        }
+
+        .console-entry.wrap-mode {
+            white-space: pre-wrap;
+            overflow-x: hidden;
+            word-break: break-word;
+        }
+
+        .console-timestamp {
+            font-size: 11px;
+        }
+
+        .console-warn .console-type {
+            color: #fbbf24; /* yellow-400 */
+        }
+
+        .console-error .console-type {
+            color: #f87171; /* red-400 */
+        }
+
+        .console-info .console-type {
+            color: #60a5fa; /* blue-400 */
+        }
+
+        .console-debug .console-type {
+            color: #a78bfa; /* violet-400 */
+        }
+
+        .console-warn .console-message {
+            color: #fde047; /* yellow-300 */
+        }
+
+        .console-error .console-message {
+            color: #fca5a5; /* red-300 */
+        }
+
+        .console-info .console-message {
+            color: #93c5fd; /* blue-300 */
+        }
+
+        .console-debug .console-message {
+            color: #c4b5fd; /* violet-300 */
+        }
+
+        /* Scrollbar styling */
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .console-output::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Collapsible styles */
+        .console-container {
+            transition: height 0.3s ease-in-out;
+            overflow: hidden;
+        }
+
+        .console-container.collapsed {
+            height: 40px !important;
+        }
+
+        .console-container.collapsed .console-output {
+            display: none;
+        }
+
+        .collapse-button {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .collapse-button.collapsed {
+            transform: rotate(180deg);
+        }
+    </style>
+
+    <div id="console-container" class="console-container flex flex-col h-80 max-h-80 border border-gray-200 rounded-md bg-stone-900 overflow-hidden">
+        <div class="flex justify-between items-center px-3 py-2 bg-opacity-10 border-b border-gray-200 text-white text-sm font-bold">
+            <div class="flex items-center gap-2">
+                <button id="collapse-button" class="collapse-button text-gray-400 hover:text-white text-sm px-1 py-1 rounded" 
+                        onclick="this.getRootNode().host.toggleCollapse()" title="Collapse/Expand Console">
+                    ▼
+                </button>
+                <span class="text-white">Console</span>
+            </div>
+            <div class="flex gap-2">
+                <button id="scroll-toggle" class="text-blue-400 text-sm px-2 py-1 rounded" 
+                        onclick="this.getRootNode().host.toggleHorizontalScroll()">Scroll</button>
+                <button class="text-red-400 text-sm px-2 py-1 rounded" 
+                        onclick="this.getRootNode().host.clear()">Clear</button>
+            </div>
+        </div>
+        <div id="console-output" class="flex-1 overflow-auto p-2 text-sm text-white bg-stone-900"></div>
+    </div>
+</template>
