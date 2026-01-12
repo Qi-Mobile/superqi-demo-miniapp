@@ -14,6 +14,13 @@
         <miniapp-header></miniapp-header>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="deviceInfoButton" onclick="getDeviceInfo()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Device Info
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
             <button onclick="getAuthCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
                 Auth Code</button>
         </div>
@@ -38,13 +45,6 @@
             </button>
         </div>
 
-        <div class="flex flex-col gap-2 mb-4 px-4">
-            <button id="refundButton" onclick="getDeviceInfo()"
-                class="bg-orange-500 text-white px-4 py-2 font-bold w-full rounded-md">
-                Device Info
-            </button>
-        </div>
-
         <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
             <miniapp-console class="w-full h-full"></miniapp-console>
         </section>
@@ -57,7 +57,8 @@
         token: '',
         paymentUrl: '',
         paymentId: '',
-        paymentAmount: 0
+        paymentAmount: 0,
+        role: ''
     }
 
     function getDeviceInfo() {
@@ -66,14 +67,39 @@
             "getDeviceInfo",
             {},
             function (data) {
-                console.log('Result: \n' + JSON.stringify(data))
+                console.log('[Frontend] Current Role:', data.currentRole);
+                state.role = data.currentRole;
             });
     }
 
     function getAuthCode() {
+        if (state.role === 'business') {
+            getAuthCodeBusiness();
+        } else if (state.role === 'customer') {
+            getAuthCodeCustomer();
+        }
+    }
+
+    function getAuthCodeBusiness() {
         console.log('[Frontend] Requesting auth code from wallet...');
         my.getAuthCode({
-            scopes: ['MERCHANT_ID', 'MERCHANT_NAME', 'auth_base'],
+            scopes: ['MERCHANT_ID', 'MERCHANT_NAME'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+                state.authCode = res.authCode;
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+            },
+        });
+    }
+
+    function getAuthCodeCustomer() {
+        console.log('[Frontend] Requesting auth code from wallet...');
+        my.getAuthCode({
+            scopes: ['USER_ID', 'auth_base'],
             success: (res) => {
                 console.log('[Frontend] SUCCESS: Auth code retrieved');
                 console.log('[Frontend] Auth code:', res.authCode);
@@ -96,7 +122,7 @@
         console.log('[Frontend] STARTING TOKEN EXCHANGE');
         console.log('=================================================================');
         console.log('[Frontend] Sending auth code to backend...');
-        console.log('[Frontend] Request body:', {auth_code: state.authCode});
+        console.log('[Frontend] Request body:', { auth_code: state.authCode });
 
         fetch(`${BASE_URL}/api/auth/apply-token`, {
             method: 'POST',
