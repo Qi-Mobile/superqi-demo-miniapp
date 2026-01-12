@@ -26,6 +26,8 @@ func main() {
 
 	apiGroup := app.Group("/api")
 	api.InitAuthEndpoint(apiGroup)
+	api.InitUserInfoEndpoint(apiGroup)
+	api.InitMerchantInfoEndpoint(apiGroup)
 	api.InitPaymentEndpoint(apiGroup)
 	api.InitRefundEndpoint(apiGroup)
 	api.InitAgreementEndpoint(apiGroup)

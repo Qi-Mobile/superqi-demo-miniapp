@@ -1,4 +1,4 @@
-const BASE_URL = "public-superqi-demo-go-production.up.railway.app";
+const BASE_URL = "http://172.20.10.4:1999";
 
 class Header extends HTMLElement {
     constructor() {

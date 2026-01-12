@@ -38,18 +38,14 @@ func InitAuthEndpoint(group fiber.Router) {
 			return fiber.NewError(fiber.StatusBadRequest, "Invalid token response: "+tokenResponse.Result.ResultMessage)
 		}
 
-		info, err := alipay.Interface.InquiryUserInfo(tokenResponse.AccessToken)
-		if err != nil {
-			log.Printf("[ERROR] Failed to retrieve user info: %v\n", err)
-			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
-		}
+		log.Println("[INFO] Token exchange successful")
+		log.Printf("[INFO] Customer ID: %s\n", tokenResponse.CustomerID)
+		log.Println("[INFO] User/Merchant detailed info can be retrieved via separate endpoints")
 
-		infoJson, _ := json.MarshalIndent(info, "", "  ")
-		log.Printf("[SUCCESS] User info retrieved:\n%s\n\n", string(infoJson))
-
-		// Return a JWE to the MiniApp containing the required access token to be used in future calls to A+ backend
+		// Return a JWE to the MiniApp containing the access token and customer ID
+		// The customerID is returned from the token exchange and can be either userId or merchantId
 		jweToken, err := jwe.CreateJWE(jwe.TokenClaims{
-			UserID:      info.UserInfo.UserID,
+			UserID:      tokenResponse.CustomerID,
 			AccessToken: tokenResponse.AccessToken,
 		})
 
@@ -58,7 +54,6 @@ func InitAuthEndpoint(group fiber.Router) {
 			return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 		}
 
-		// Build response object - only return token, no payment info
 		response := fiber.Map{
 			"token": jweToken,
 		}

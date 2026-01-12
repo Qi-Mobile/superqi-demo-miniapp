@@ -26,13 +26,24 @@
         </div>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
-            <button onclick="applyCode()" class="bg-red-400 text-white px-4 py-2 font-bold w-full rounded-md">Apply
+            <button onclick="applyCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Apply
                 Code</button>
         </div>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getUserInfo()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                User Info (only for customers)</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getMerchantInfo()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                Merchant Info (only for businesses)</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
             <button id="payButton" onclick="createPayment()"
-                class="bg-purple-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
                 style="background-color: #a78bfa;">
                 Pay
             </button>
@@ -40,7 +51,7 @@
 
         <div class="flex flex-col gap-2 mb-4 px-4">
             <button id="refundButton" onclick="requestRefund()"
-                class="bg-orange-500 text-white px-4 py-2 font-bold w-full rounded-md">
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
                 Refund
             </button>
         </div>
@@ -81,9 +92,9 @@
     }
 
     function getAuthCodeBusiness() {
-        console.log('[Frontend] Requesting auth code from wallet...');
+        console.log('[Frontend] Requesting Business Auth Code from wallet...');
         my.getAuthCode({
-            scopes: ['MERCHANT_ID', 'MERCHANT_NAME'],
+            scopes: ['MERCHANT_ID', 'auth_base'],
             success: (res) => {
                 console.log('[Frontend] SUCCESS: Auth code retrieved');
                 console.log('[Frontend] Auth code:', res.authCode);
@@ -97,7 +108,7 @@
     }
 
     function getAuthCodeCustomer() {
-        console.log('[Frontend] Requesting auth code from wallet...');
+        console.log('[Frontend] Requesting Customer Auth Code from wallet...');
         my.getAuthCode({
             scopes: ['USER_ID', 'auth_base'],
             success: (res) => {
@@ -142,12 +153,78 @@
             if (typeof data === 'object') {
                 state.token = data.token;
                 console.log('[Frontend] Token saved to state');
-                console.log('[Frontend] Authentication complete - ready to create payment');
-                console.log('[Frontend] Click "Pay" button to create payment');
+                console.log('[Frontend] Authentication complete');
+                console.log('[Frontend] Click "Get User Info" or "Get Merchant Info" to retrieve details');
             }
             console.log('=================================================================\n');
         }).catch(error => {
             console.error('[Frontend] ERROR: Failed during token exchange');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function getUserInfo() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available - click "Apply Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] REQUESTING USER INFO');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending token to backend for user info...');
+
+        fetch(`${BASE_URL}/api/user/info`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'token': state.token,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: User info received');
+            console.log('[Frontend] User info:', data);
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to get user info');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function getMerchantInfo() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available - click "Apply Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] REQUESTING MERCHANT INFO');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending token to backend for merchant info...');
+
+        fetch(`${BASE_URL}/api/merchant/info`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'token': state.token,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Merchant info received');
+            console.log('[Frontend] Merchant info:', data);
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to get merchant info');
             console.error('[Frontend] Error details:', error);
             console.log('=================================================================\n');
         });
@@ -185,7 +262,7 @@
             if (typeof data === 'object' && data.paymentUrl) {
                 state.paymentUrl = data.paymentUrl;
                 state.paymentId = data.paymentId;
-                state.paymentAmount = data.amount || 0;  // Store payment amount
+                state.paymentAmount = data.amount || 0;
                 console.log('[Frontend] Payment URL received:', state.paymentUrl);
                 console.log('[Frontend] Payment ID:', state.paymentId);
                 console.log('[Frontend] Payment Amount:', state.paymentAmount);
@@ -193,7 +270,6 @@
                 console.log('[Frontend] Automatically opening payment cashier...');
                 console.log('=================================================================\n');
 
-                // Automatically redirect to payment
                 goToPayment();
             } else {
                 console.error('[Frontend] ERROR: No payment URL in response');

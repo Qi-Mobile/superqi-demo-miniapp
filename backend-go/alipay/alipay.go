@@ -48,6 +48,27 @@ func (client *Client) InquiryUserInfo(accessToken string) (InquiryUserInfoRespon
 	return body, err
 }
 
+func (client *Client) InquiryMerchantInfo(accessToken string) (InquiryMerchantInfoResponse, error) {
+	const path = "/v1/merchants/inquiryMerchantInfo"
+	params := map[string]string{
+		"accessToken": accessToken,
+	}
+
+	headers, err := client.buildHeaders("POST", path, params)
+	if err != nil {
+		return InquiryMerchantInfoResponse{}, err
+	}
+
+	response, err := client.sendRequest(path, "POST", headers, params)
+	if err != nil {
+		return InquiryMerchantInfoResponse{}, err
+	}
+
+	var body InquiryMerchantInfoResponse
+	err = json.Unmarshal(response, &body)
+	return body, err
+}
+
 func (client *Client) PrepareAuthorization(contractDescription string) (PrepareAuthorizationResponse, error) {
 	const path = "/v1/authorizations/prepare"
 
