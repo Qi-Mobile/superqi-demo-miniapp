@@ -60,6 +60,16 @@ type InquiryUserInfoResponse struct {
 	} `json:"userInfo"`
 }
 
+// Merchant related types below
+type InquiryMerchantInfoResponse struct {
+	Result       Result `json:"result"`
+	MerchantInfo struct {
+		MerchantID   string `json:"merchantId"`
+		MerchantName string `json:"merchantName"`
+		MerchantLogo string `json:"merchantLogo"`
+	} `json:"merchantInfo"`
+}
+
 // Payment related types below
 type PaymentAmount struct {
 	Currency string `json:"currency"`

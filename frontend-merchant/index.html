@@ -1,0 +1,64 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp - Index</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <section id="content" class="flex-1 mt-4 flex flex-col items-start p-4">
+            <div class="w-full">
+                <h2 class="text-2xl font-bold mb-4">API Categories</h2>
+                <div id="page-buttons" class="flex flex-col gap-4 w-full">
+                    <!-- Buttons will be dynamically generated here -->
+                </div>
+            </div>
+        </section>
+    </div>
+</body>
+
+<script>
+    const categories = [
+        {
+            filename: 'category-auth.html',
+            title: 'Authentication & Payment',
+            description: 'Auth Code, Token, Online Payment',
+        },
+    ];
+
+    function createCategoryButton(category) {
+        const button = document.createElement('button');
+        button.className = 'bg-yellow-400 text-stone-900 px-4 py-2 font-bold w-full rounded-md flex flex-col items-start hover:bg-yellow-500 transition text-left';
+        button.innerHTML = `
+            <div class="font-bold text-lg">${category.title}</div>
+            <div class="text-sm text-gray-600 mt-1 truncate w-full">${category.description}</div>
+        `;
+        button.onclick = () => {
+            window.location.href = category.filename;
+        };
+        return button;
+    }
+
+    function loadCategoryButtons() {
+        const container = document.getElementById('page-buttons');
+
+        categories.forEach(category => {
+            const button = createCategoryButton(category);
+            container.appendChild(button);
+        });
+    }
+
+    window.onload = () => {
+        loadCategoryButtons();
+    }
+</script>
+
+</html>

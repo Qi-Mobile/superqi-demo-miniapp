@@ -1,0 +1,429 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="deviceInfoButton" onclick="getDeviceInfo()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Device Info
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getAuthCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                Auth Code</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="applyCode()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Apply
+                Code</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getUserInfo()" class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                User Info (only for customers)</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="getMerchantInfo()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Get
+                Merchant Info (only for businesses)</button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="payButton" onclick="createPayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Pay
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="refundButton" onclick="requestRefund()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Refund
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    const state = {
+        authCode: '',
+        token: '',
+        paymentUrl: '',
+        paymentId: '',
+        paymentAmount: 0,
+        role: ''
+    }
+
+    function getDeviceInfo() {
+        console.log('[Frontend] Requesting Device info from wallet...');
+        AlipayJSBridge.call(
+            "getDeviceInfo",
+            {},
+            function (data) {
+                console.log('[Frontend] Current Role:', data.currentRole);
+                state.role = data.currentRole;
+            });
+    }
+
+    function getAuthCode() {
+        if (state.role === 'business') {
+            getAuthCodeBusiness();
+        } else if (state.role === 'customer') {
+            getAuthCodeCustomer();
+        }
+    }
+
+    function getAuthCodeBusiness() {
+        console.log('[Frontend] Requesting Business Auth Code from wallet...');
+        my.getAuthCode({
+            scopes: ['MERCHANT_ID', 'MERCHANT_NAME'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+                state.authCode = res.authCode;
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+            },
+        });
+    }
+
+    function getAuthCodeCustomer() {
+        console.log('[Frontend] Requesting Customer Auth Code from wallet...');
+        my.getAuthCode({
+            scopes: ['USER_ID', 'auth_base'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+                state.authCode = res.authCode;
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+            },
+        });
+    }
+
+    function applyCode() {
+        if (state.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available - click "Get Auth Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STARTING TOKEN EXCHANGE');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending auth code to backend...');
+        console.log('[Frontend] Request body:', { auth_code: state.authCode });
+
+        fetch(`${BASE_URL}/api/auth/apply-token`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'auth_code': state.authCode,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Response received from backend');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object') {
+                state.token = data.token;
+                console.log('[Frontend] Token saved to state');
+                console.log('[Frontend] Authentication complete');
+                console.log('[Frontend] Click "Get User Info" or "Get Merchant Info" to retrieve details');
+            }
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed during token exchange');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function getUserInfo() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available - click "Apply Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] REQUESTING USER INFO');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending token to backend for user info...');
+
+        fetch(`${BASE_URL}/api/user/info`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'token': state.token,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: User info received');
+            console.log('[Frontend] User info:', data);
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to get user info');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function getMerchantInfo() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available - click "Apply Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] REQUESTING MERCHANT INFO');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending token to backend for merchant info...');
+
+        fetch(`${BASE_URL}/api/merchant/info`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'token': state.token,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Merchant info received');
+            console.log('[Frontend] Merchant info:', data);
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to get merchant info');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function createPayment() {
+        if (state.token === '') {
+            console.error('[Frontend] ERROR: Token not available');
+            my.alert({
+                content: 'Please click "Apply Code" button first to authenticate.',
+            });
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] CREATING PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending token to backend for payment creation...');
+
+        fetch(`${BASE_URL}/api/payment/create`, {
+            method: 'POST',
+            body: JSON.stringify({
+                'token': state.token,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Payment response received');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object' && data.paymentUrl) {
+                state.paymentUrl = data.paymentUrl;
+                state.paymentId = data.paymentId;
+                state.paymentAmount = data.amount || 0;
+                console.log('[Frontend] Payment URL received:', state.paymentUrl);
+                console.log('[Frontend] Payment ID:', state.paymentId);
+                console.log('[Frontend] Payment Amount:', state.paymentAmount);
+                console.log('[Frontend] Payment created successfully');
+                console.log('[Frontend] Automatically opening payment cashier...');
+                console.log('=================================================================\n');
+
+                goToPayment();
+            } else {
+                console.error('[Frontend] ERROR: No payment URL in response');
+                console.log('=================================================================\n');
+            }
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to create payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    function goToPayment() {
+        if (state.paymentUrl === '') {
+            console.error('[Frontend] ERROR: Payment URL not available');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STARTING PAYMENT FLOW');
+        console.log('=================================================================');
+        console.log('[Frontend] Payment URL:', state.paymentUrl);
+        console.log('[Frontend] Payment ID:', state.paymentId);
+        console.log('[Frontend] Calling my.tradePay() JSAPI...');
+
+        my.tradePay({
+            paymentUrl: state.paymentUrl,
+            success: (res) => {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT SUCCESS CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Success response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] Result code:', res.resultCode);
+
+                if (res.resultCode === '9000') {
+                    console.log('[Frontend] Payment SUCCESSFUL (code: 9000)');
+                } else if (res.resultCode === '8000') {
+                    console.log('[Frontend] Trade PROCESSING (code: 8000)');
+                } else if (res.resultCode === '6004') {
+                    console.log('[Frontend] Unknown result, may be success (code: 6004)');
+                } else {
+                    console.log('[Frontend] Other result code:', res.resultCode);
+                }
+                console.log('=================================================================\n');
+            },
+            fail: (res) => {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT FAIL CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Fail response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] Result code:', res.resultCode);
+
+                if (res.resultCode === '4000') {
+                    console.log('[Frontend] Payment FAILED (code: 4000)');
+                } else if (res.resultCode === '6001') {
+                    console.log('[Frontend] User CANCELLED payment (code: 6001)');
+                } else if (res.resultCode === '6002') {
+                    console.log('[Frontend] Network EXCEPTION (code: 6002)');
+                } else {
+                    console.log('[Frontend] Other error code:', res.resultCode);
+                }
+                console.log('=================================================================\n');
+            },
+            complete: (res) => {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT COMPLETE CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Complete response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] NOTE: This callback executes after success OR fail');
+                console.log('[Frontend] Next step: Backend should receive webhook notification');
+                console.log('[Frontend] Check backend logs for webhook callback from wallet');
+                console.log('=================================================================\n');
+            }
+        });
+
+        console.log('[Frontend] Waiting for user action in wallet cashier page...');
+    }
+
+    function requestRefund() {
+        if (state.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            my.alert({
+                content: 'No payment to refund. Please create a payment first.',
+            });
+            return;
+        }
+
+        if (state.paymentAmount === 0) {
+            console.error('[Frontend] ERROR: Payment amount not available');
+            my.alert({
+                content: 'Payment amount is unknown. Cannot process refund.',
+            });
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] REQUESTING REFUND');
+        console.log('=================================================================');
+        console.log('[Frontend] Payment ID to refund:', state.paymentId);
+        console.log('[Frontend] Refund amount (IQD):', state.paymentAmount);
+        console.log('[Frontend] Sending refund request to backend...');
+
+        fetch(`${BASE_URL}/api/payment/refund`, {
+            method: 'POST',
+            body: JSON.stringify({
+                paymentId: state.paymentId,
+                amount: state.paymentAmount
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        }).then(data => {
+            console.log('[Frontend] SUCCESS: Refund response received');
+            console.log('[Frontend] Response data:', data);
+
+            if (typeof data === 'object') {
+                if (data.status === 'SUCCESS' || data.resultStatus === 'S') {
+                    console.log('[Frontend] Refund processed successfully!');
+                    console.log('[Frontend] Refund ID:', data.refundId);
+                    my.alert({
+                        title: 'Refund Successful',
+                        content: 'Your refund has been processed successfully.',
+                    });
+                } else if (data.status === 'PENDING' || data.resultStatus === 'U') {
+                    console.log('[Frontend]  Refund is pending/unknown');
+                    console.log('[Frontend] Backend will poll for status');
+                    my.alert({
+                        title: 'Refund Pending',
+                        content: 'Your refund is being processed. Please check back later.',
+                    });
+                } else if (data.status === 'FAILED' || data.resultStatus === 'F') {
+                    console.log('[Frontend] Refund failed');
+                    console.log('[Frontend] Error:', data.errorCode || data.resultMessage);
+                    my.alert({
+                        title: 'Refund Failed',
+                        content: data.resultMessage || 'Refund request failed. Please try again.',
+                    });
+                } else {
+                    console.log('[Frontend] Unknown refund status:', data);
+                }
+            }
+            console.log('=================================================================\n');
+        }).catch(error => {
+            console.error('[Frontend] ERROR: Failed to request refund');
+            console.error('[Frontend] Error details:', error);
+            my.alert({
+                title: 'Error',
+                content: 'Failed to process refund request. Please try again.',
+            });
+            console.log('=================================================================\n');
+        });
+    }
+</script>
+
+</html>
