@@ -258,6 +258,10 @@ modules.xml
 res/
 .env.DS_Store
 
+# Node modules
+node_modules/
+**/node_modules/
+
 # Environment files - comprehensive protection
 .env
 .env.local
