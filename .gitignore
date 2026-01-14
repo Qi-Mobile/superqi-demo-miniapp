@@ -256,7 +256,11 @@ modules.xml
 
 .idea
 res/
-.env.DS_Store
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
 # Node modules
 node_modules/
