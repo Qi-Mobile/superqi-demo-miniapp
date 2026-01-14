@@ -43,8 +43,7 @@
 
         <div class="flex flex-col gap-2 mb-4 px-4">
             <button id="payButton" onclick="createPayment()"
-                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
-                style="background-color: #a78bfa;">
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
                 Pay
             </button>
         </div>
@@ -94,7 +93,7 @@
     function getAuthCodeBusiness() {
         console.log('[Frontend] Requesting Business Auth Code from wallet...');
         my.getAuthCode({
-            scopes: ['MERCHANT_ID', 'auth_base'],
+            scopes: ['MERCHANT_ID', 'MERCHANT_NAME'],
             success: (res) => {
                 console.log('[Frontend] SUCCESS: Auth code retrieved');
                 console.log('[Frontend] Auth code:', res.authCode);
