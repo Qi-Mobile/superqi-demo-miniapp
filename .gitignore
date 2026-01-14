@@ -257,4 +257,15 @@ modules.xml
 .idea
 res/
 .env.DS_Store
+
+# Environment files - comprehensive protection
 .env
+.env.local
+.env.*.local
+*.env
+**/.env
+backend-go/.env
+backend-node/.env
+frontend/.env
+.env.*
+!.env.example
