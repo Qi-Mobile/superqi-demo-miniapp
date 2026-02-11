@@ -305,10 +305,13 @@
 
                 if (res.resultCode === '9000') {
                     console.log('[Frontend] Payment SUCCESSFUL (code: 9000)');
+                    window.location.href = '/payment-success.html';
                 } else if (res.resultCode === '8000') {
                     console.log('[Frontend] Trade PROCESSING (code: 8000)');
+                    window.location.href = '/payment-success.html';
                 } else if (res.resultCode === '6004') {
                     console.log('[Frontend] Unknown result, may be success (code: 6004)');
+                    window.location.href = '/payment-success.html';
                 } else {
                     console.log('[Frontend] Other result code:', res.resultCode);
                 }
