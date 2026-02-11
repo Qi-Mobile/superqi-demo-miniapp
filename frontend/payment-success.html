@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Payment Successful</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <section class="flex-1 flex flex-col items-center justify-center p-8 gap-6">
+
+            <!-- Success icon -->
+            <div class="w-24 h-24 rounded-full bg-green-400 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-stone-900">Payment Successful!</h2>
+                <p class="text-gray-500 text-sm mt-2">Your payment has been processed successfully.</p>
+            </div>
+
+            <!-- Payment details (shown only if Alipay passes query params) -->
+            <div id="payment-details" class="w-full bg-gray-50 rounded-md p-4 hidden">
+                <h3 class="font-bold text-stone-900 mb-3">Payment Details</h3>
+                <div class="flex flex-col gap-2 text-sm">
+                    <div id="detail-payment-id" class="hidden flex flex-row justify-between">
+                        <span class="text-gray-500">Payment ID</span>
+                        <span id="payment-id-value" class="font-bold text-stone-900 text-right ml-2 break-all"></span>
+                    </div>
+                    <div id="detail-order-id" class="hidden flex flex-row justify-between">
+                        <span class="text-gray-500">Order ID</span>
+                        <span id="order-id-value" class="font-bold text-stone-900 text-right ml-2 break-all"></span>
+                    </div>
+                    <div id="detail-status" class="hidden flex flex-row justify-between">
+                        <span class="text-gray-500">Status</span>
+                        <span id="status-value" class="font-bold text-stone-900"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Close button -->
+            <button id="close-btn"
+                class="bg-yellow-400 text-stone-900 px-4 py-2 font-bold w-full rounded-md hover:bg-yellow-500 transition">
+                Close
+            </button>
+
+        </section>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+
+        const paymentId = params.get('paymentId') || params.get('payment_id');
+        const orderId = params.get('orderId') || params.get('order_id');
+        const status = params.get('resultStatus') || params.get('status');
+
+        let hasDetails = false;
+
+        if (paymentId) {
+            document.getElementById('payment-id-value').textContent = paymentId;
+            document.getElementById('detail-payment-id').classList.remove('hidden');
+            hasDetails = true;
+        }
+
+        if (orderId) {
+            document.getElementById('order-id-value').textContent = orderId;
+            document.getElementById('detail-order-id').classList.remove('hidden');
+            hasDetails = true;
+        }
+
+        if (status) {
+            document.getElementById('status-value').textContent = status;
+            document.getElementById('detail-status').classList.remove('hidden');
+            hasDetails = true;
+        }
+
+        if (hasDetails) {
+            document.getElementById('payment-details').classList.remove('hidden');
+        }
+    </script>
+
+</body>
+
+</html>
