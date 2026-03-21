@@ -1,4 +1,4 @@
-const BASE_URL = "http://172.20.10.4:1999";
+const BASE_URL = "http://172.20.10.3:1999";
 
 class Header extends HTMLElement {
     constructor() {
@@ -105,7 +105,8 @@ class Header extends HTMLElement {
             'imageRelate.html': 'category-media.html',
             'removeSavedFile.html': 'category-file.html',
             'sendInBox.html': 'category-messages.html',
-            'pushNotification.html': 'category-messages.html'
+            'pushNotification.html': 'category-messages.html',
+            'inquiryUserCardList.html': 'category-auth.html'
         };
         return pageCategories[filename] || null;
     }
@@ -156,7 +157,8 @@ class Header extends HTMLElement {
             'imageRelate.html': 'Preview and Save Image',
             'removeSavedFile.html': 'Remove Saved File',
             'sendInBox.html': 'Send Message',
-            'pushNotification.html': 'Send Notification'
+            'pushNotification.html': 'Send Notification',
+            'inquiryUserCardList.html': 'Inquiry User Card List'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
