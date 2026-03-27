@@ -52,6 +52,12 @@ func InitPaymentEndpoint(group fiber.Router) {
 			response["paymentUrl"] = paymentResponse.GetRedirectURL()
 			response["paymentId"] = paymentResponse.PaymentID
 			log.Printf("[INFO] Sending payment URL to frontend: %s\n", paymentResponse.GetRedirectURL())
+
+			// Start background polling for payment status
+			if paymentResponse.PaymentID != "" {
+				log.Printf("[INFO] Starting background polling for payment: %s\n", paymentResponse.PaymentID)
+				StartPaymentPolling(paymentResponse.PaymentID, paymentResponse.PaymentRequestID)
+			}
 		} else {
 			log.Println("[WARNING] No payment URL in response")
 			response["success"] = false
@@ -60,6 +66,36 @@ func InitPaymentEndpoint(group fiber.Router) {
 
 		log.Println("[SUCCESS] Returning payment response to frontend")
 		return ctx.JSON(response)
+	})
+
+	// GET /api/payment/status/:paymentId - Check payment status from cache
+	group.Get("/payment/status/:paymentId", func(ctx *fiber.Ctx) error {
+		paymentId := ctx.Params("paymentId")
+
+		log.Printf("[INFO] Status check request for payment: %s\n", paymentId)
+
+		// Get status from store
+		status, exists := paymentStore.Get(paymentId)
+		if !exists {
+			log.Printf("[WARNING] Payment %s not found in cache\n", paymentId)
+			return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"success": false,
+				"message": "Payment not found in cache. It may be too old or was never tracked.",
+			})
+		}
+
+		log.Printf("[INFO] Payment %s status: %s (completed: %v)\n", paymentId, status.Status, status.Completed)
+
+		return ctx.JSON(fiber.Map{
+			"success":          true,
+			"paymentId":        status.PaymentID,
+			"paymentRequestId": status.PaymentRequestID,
+			"status":           status.Status,
+			"paymentStatus":    status.PaymentStatus,
+			"completed":        status.Completed,
+			"message":          status.Message,
+			"lastChecked":      status.LastChecked,
+		})
 	})
 }
 
@@ -77,6 +113,12 @@ func createTestPayment(userID string) (alipay.PaymentResponse, error) {
 		baseURL = "http://localhost:1999"
 	}
 
+	// Frontend URL for redirect after payment
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://172.20.10.2:5173" // Default frontend URL
+	}
+
 	paymentRequest := alipay.PaymentRequest{
 		ProductCode:      alipay.ONLINE_PURCHASE,
 		PaymentRequestID: paymentRequestID,
@@ -91,7 +133,7 @@ func createTestPayment(userID string) (alipay.PaymentResponse, error) {
 			},
 		},
 		PaymentExpiryTime:  expiryTime,
-		PaymentRedirectURL: baseURL + "/payment-success.html",
+		PaymentRedirectURL: frontendURL + "/payment-success.html",
 		// Public URL for payment notifications code should be set here
 	}
 

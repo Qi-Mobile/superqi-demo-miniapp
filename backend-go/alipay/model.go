@@ -194,3 +194,28 @@ type SendPushResponse struct {
 	MessageID  string `json:"messageId,omitempty"`
 	ExtendInfo string `json:"extendInfo,omitempty"`
 }
+
+// InquiryPayment related types below
+type InquiryPaymentRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+type Transaction struct {
+	TransactionAmount PaymentAmount `json:"transactionAmount,omitempty"`
+	TransactionID     string        `json:"transactionId,omitempty"`
+	TransactionTime   string        `json:"transactionTime,omitempty"`
+	TransactionType   string        `json:"transactionType,omitempty"`
+	TransactionStatus string        `json:"transactionStatus,omitempty"`
+}
+
+type InquiryPaymentResponse struct {
+	Result           Result        `json:"result"`
+	PaymentID        string        `json:"paymentId,omitempty"`
+	PaymentRequestID string        `json:"paymentRequestId,omitempty"`
+	PaymentAmount    PaymentAmount `json:"paymentAmount,omitempty"`
+	PaymentTime      string        `json:"paymentTime,omitempty"`
+	PaymentStatus    string        `json:"paymentStatus,omitempty"`
+	Transactions     []Transaction `json:"transactions,omitempty"`
+	ExtendInfo       string        `json:"extendInfo,omitempty"`
+}
