@@ -33,6 +33,7 @@ func main() {
 	api.InitAgreementEndpoint(apiGroup)
 	api.InitNotificationEndpoint(apiGroup)
 	api.InitInquiryEndpoint(apiGroup)
+	api.InitUploadFileEndpoint(apiGroup)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {

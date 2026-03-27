@@ -277,3 +277,7 @@ backend-node/.env
 frontend/.env
 .env.*
 !.env.example
+
+# Uploaded files - user generated content
+backend-go/uploads/
+uploads/
