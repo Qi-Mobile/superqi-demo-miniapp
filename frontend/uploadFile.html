@@ -19,20 +19,11 @@
                 <p class="text-sm text-gray-600">Choose files from disk and upload to server using my.uploadFile() API</p>
             </div>
 
-            <button onclick="uploadImage()"
-                class="bg-blue-400 text-white px-4 py-2 font-bold w-full rounded-md">Upload Image</button>
-
-            <button onclick="uploadPDF()"
-                class="bg-green-400 text-white px-4 py-2 font-bold w-full rounded-md">Upload PDF</button>
-
             <button onclick="uploadFile()"
-                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Choose & Open PDF from Disk</button>
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">use openDocument() to open PDF</button>
 
             <button onclick="chooseAndUploadPDF()"
                 class="bg-purple-400 text-white px-4 py-2 font-bold w-full rounded-md">Choose PDF & Upload to Server</button>
-
-            <button onclick="simpleUploadTest()"
-                class="bg-red-400 text-white px-4 py-2 font-bold w-full rounded-md">Simple Upload Test (Minimal Params)</button>
         </div>
 
         <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
@@ -42,162 +33,16 @@
 </body>
 
 <script>
-    // // Upload Image Function
-    // function uploadImage() {
-    //     console.log('Starting image upload process...');
-
-    //     if (typeof my === 'undefined') {
-    //         console.error('my object is not available');
-    //         return;
-    //     }
-
-    //     // Step 1: Let user choose an image
-    //     my.chooseImage({
-    //         count: 1,
-    //         sourceType: ['album', 'camera'],
-    //         success: (chooseResult) => {
-    //             console.log('Image selected successfully:', JSON.stringify(chooseResult));
-
-    //             // Get the file path from the result
-    //             const filePath = chooseResult.apFilePaths ? chooseResult.apFilePaths[0] :
-    //                             chooseResult.tempFilePaths ? chooseResult.tempFilePaths[0] : null;
-
-    //             if (filePath) {
-    //                 console.log('File path:', filePath);
-
-    //                 // Step 2: Upload the selected image
-    //                 my.uploadFile({
-    //                     url: 'https://httpbin.org/post', // Test endpoint (returns what you send)
-    //                     filePath: filePath,
-    //                     fileName: 'image', // Form field name
-    //                     fileType: 'image',
-    //                     formData: {
-    //                         userId: 'test-user-123',
-    //                         uploadType: 'profile-picture'
-    //                     },
-    //                     success: (res) => {
-    //                         console.log('Upload SUCCESS:', JSON.stringify(res));
-    //                         console.log('Status Code:', res.statusCode);
-    //                         console.log('Response Data:', res.data);
-
-    //                         my.alert({
-    //                             title: 'Success',
-    //                             content: 'Image uploaded successfully!\nStatus: ' + res.statusCode
-    //                         });
-    //                     },
-    //                     fail: (error) => {
-    //                         console.error('Upload FAILED:', JSON.stringify(error));
-
-    //                         my.alert({
-    //                             title: 'Upload Error',
-    //                             content: 'Upload failed: ' + (error.errorMessage || JSON.stringify(error))
-    //                         });
-    //                     },
-    //                     complete: () => {
-    //                         console.log('Upload process completed');
-    //                     }
-    //                 });
-    //             } else {
-    //                 console.error('No file path found in the result');
-    //                 my.alert({
-    //                     title: 'Error',
-    //                     content: 'Failed to get file path'
-    //                 });
-    //             }
-    //         },
-    //         fail: (error) => {
-    //             console.error('Image selection FAILED:', JSON.stringify(error));
-    //             my.alert({
-    //                 title: 'Selection Error',
-    //                 content: 'Failed to select image: ' + (error.errorMessage || 'Unknown error')
-    //             });
-    //         }
-    //     });
-    // }
-
-    // // Upload PDF Function
-    // function uploadPDF() {
-    //     console.log('Starting PDF upload process...');
-
-    //     if (typeof my === 'undefined') {
-    //         console.error('my object is not available');
-    //         return;
-    //     }
-
-    //     // Step 1: Let user choose a PDF using chooseImage (it can select PDFs too)
-    //     my.chooseImage({
-    //         count: 1,
-    //         success: (chooseResult) => {
-    //             console.log('File selected successfully:', JSON.stringify(chooseResult));
-
-    //             // Get the file path from the result
-    //             const filePath = chooseResult.apFilePaths ? chooseResult.apFilePaths[0] :
-    //                             chooseResult.tempFilePaths ? chooseResult.tempFilePaths[0] : null;
-
-    //             if (filePath) {
-    //                 console.log('File path:', filePath);
-
-    //                 // Step 2: Upload the selected PDF
-    //                 my.uploadFile({
-    //                     url: 'https://httpbin.org/post', // Test endpoint
-    //                     filePath: filePath,
-    //                     fileName: 'document', // Form field name
-    //                     fileType: 'pdf',
-    //                     formData: {
-    //                         userId: 'test-user-123',
-    //                         documentType: 'invoice'
-    //                     },
-    //                     success: (res) => {
-    //                         console.log('Upload SUCCESS:', JSON.stringify(res));
-    //                         console.log('Status Code:', res.statusCode);
-    //                         console.log('Response Data:', res.data);
-
-    //                         my.alert({
-    //                             title: 'Success',
-    //                             content: 'PDF uploaded successfully!\nStatus: ' + res.statusCode
-    //                         });
-    //                     },
-    //                     fail: (error) => {
-    //                         console.error('Upload FAILED:', JSON.stringify(error));
-
-    //                         my.alert({
-    //                             title: 'Upload Error',
-    //                             content: 'Upload failed: ' + (error.errorMessage || JSON.stringify(error))
-    //                         });
-    //                     },
-    //                     complete: () => {
-    //                         console.log('Upload process completed');
-    //                     }
-    //                 });
-    //             } else {
-    //                 console.error('No file path found in the result');
-    //                 my.alert({
-    //                     title: 'Error',
-    //                     content: 'Failed to get file path'
-    //                 });
-    //             }
-    //         },
-    //         fail: (error) => {
-    //             console.error('File selection FAILED:', JSON.stringify(error));
-    //             my.alert({
-    //                 title: 'Selection Error',
-    //                 content: 'Failed to select file: ' + (error.errorMessage || 'Unknown error')
-    //             });
-    //         }
-    //     });
-    // }
     function uploadFile() {
         console.log('Starting chooseFileFromDisk...');
 
         AlipayJSBridge.call('chooseFileFromDisk', {}, function (res) {
             console.log('chooseFileFromDisk result:', JSON.stringify(res));
 
-            // Check if selection was successful
             if (res && res.apFilePath) {
                 const filePath = res.apFilePath;
                 console.log('File selected:', filePath);
 
-                // Now open the PDF using my.openDocument()
                 my.openDocument({
                     filePath: filePath,
                     fileType: 'pdf',
@@ -258,7 +103,6 @@
                 const filePath = res.apFilePath;
                 console.log('File selected, starting upload:', filePath);
 
-                // Check if my.uploadFile exists
                 if (typeof my === 'undefined') {
                     console.error('ERROR: my object is not available');
                     my.alert({ content: 'my object not available' });
@@ -274,12 +118,10 @@
 
                 console.log('my.uploadFile is available, calling it now...');
 
-                // Show loading
                 my.showLoading({
                     content: 'Uploading PDF...'
                 });
 
-                // Upload the file to your server
                 console.log('Calling my.uploadFile with params:', {
                     url: 'https://httpbin.org/post',
                     filePath: filePath,
@@ -288,7 +130,7 @@
                 });
 
                 my.uploadFile({
-                    url: BASE_URL + '/api/upload', // Your Go backend endpoint
+                    url: BASE_URL + '/api/upload',
                     // url: 'https://httpbin.org/post', // Test endpoint (uncomment to test httpbin)
                     filePath: filePath,
                     fileName: 'file', // Form field name (your server will use this key)
@@ -318,7 +160,6 @@
                             console.log('MD5:', responseData.md5);
                             console.log('Upload Time:', responseData.uploadTime);
 
-                            // Show detailed success message
                             let message = 'Upload Successful!\n\n';
                             message += 'File: ' + responseData.fileName + '\n';
                             message += 'Size: ' + (responseData.fileSize / 1024).toFixed(2) + ' KB\n';
@@ -372,69 +213,6 @@
                     title: 'Error',
                     content: 'No file was selected'
                 });
-            }
-        });
-    }
-
-    // Simple upload test with minimal parameters
-    function simpleUploadTest() {
-        console.log('=== SIMPLE UPLOAD TEST ===');
-
-        AlipayJSBridge.call('chooseFileFromDisk', {}, function (res) {
-            console.log('File selection result:', JSON.stringify(res));
-
-            if (res && res.apFilePath) {
-                const filePath = res.apFilePath;
-                console.log('File path:', filePath);
-
-                // Check if uploadFile exists
-                console.log('Checking my.uploadFile availability...');
-                console.log('typeof my:', typeof my);
-                console.log('typeof my.uploadFile:', typeof my.uploadFile);
-
-                if (typeof my.uploadFile !== 'function') {
-                    console.error('my.uploadFile is NOT available');
-                    my.alert({ content: 'my.uploadFile not found!' });
-                    return;
-                }
-
-                console.log('my.uploadFile IS available, proceeding...');
-
-                // Try with absolute minimal parameters
-                console.log('Calling my.uploadFile with minimal params...');
-
-                const uploadParams = {
-                    url: 'https://httpbin.org/post',
-                    filePath: filePath,
-                    fileName: 'file',
-                    fileType: 'image', // Try with 'image' instead of 'pdf'
-                    success: function(res) {
-                        console.log('@@@ SUCCESS @@@', res);
-                        my.alert({ content: 'SUCCESS: ' + JSON.stringify(res) });
-                    },
-                    fail: function(err) {
-                        console.log('@@@ FAIL @@@', err);
-                        my.alert({ content: 'FAIL: ' + JSON.stringify(err) });
-                    },
-                    complete: function() {
-                        console.log('@@@ COMPLETE @@@');
-                    }
-                };
-
-                console.log('Upload params:', JSON.stringify(uploadParams));
-
-                try {
-                    const result = my.uploadFile(uploadParams);
-                    console.log('my.uploadFile() returned:', result);
-                } catch (e) {
-                    console.error('Exception calling my.uploadFile:', e);
-                    my.alert({ content: 'Exception: ' + e.message });
-                }
-
-                // Set a timeout to check if callbacks are never called
-                setTimeout(function() {
-                    console.log('⏰ 10 seconds elapsed - if no callbacks were triggered, the API might be hanging');
-                }, 10000);
             }
         });
     }
