@@ -107,7 +107,8 @@ class Header extends HTMLElement {
             'sendInBox.html': 'category-messages.html',
             'pushNotification.html': 'category-messages.html',
             'inquiryUserCardList.html': 'category-auth.html',
-            'uploadFile.html': 'category-network.html'
+            'uploadFile.html': 'category-network.html',
+            'share.html': 'category-device.html'
         };
         return pageCategories[filename] || null;
     }
@@ -160,7 +161,8 @@ class Header extends HTMLElement {
             'sendInBox.html': 'Send Message',
             'pushNotification.html': 'Send Notification',
             'inquiryUserCardList.html': 'Inquiry User Card List',
-            'uploadFile.html': 'Upload File'
+            'uploadFile.html': 'Upload File',
+            'share.html': 'Share'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
