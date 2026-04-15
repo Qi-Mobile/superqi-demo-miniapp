@@ -1,0 +1,300 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Escrow Payment</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <p class="text-center text-gray-500">Escrow payment flow - Merchant must accept the payment after customer pays</p>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button onclick="createEscrowPayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                1. Create Escrow Payment
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="payButton" onclick="executePayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                2. Execute Payment
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="acceptButton" onclick="merchantAccept()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                3. Merchant Accept Payment
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    // =========================================================================
+    // STATE MANAGEMENT
+    // =========================================================================
+    const escrowState = {
+        paymentUrl: '',
+        paymentId: '',
+        paymentAmount: 0,
+        currentStep: 0
+    };
+
+    // =========================================================================
+    // STEP 1: CREATE ESCROW PAYMENT
+    // =========================================================================
+    function createEscrowPayment() {
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 1: CREATE ESCROW PAYMENT');
+        console.log('=================================================================');
+
+        console.log('[Frontend] DIAGNOSTIC CHECKS:');
+        console.log('[Frontend] Checking if BASE_URL is defined...');
+        if (typeof BASE_URL === 'undefined') {
+            console.error('[Frontend] CRITICAL ERROR: BASE_URL is not defined!');
+            console.error('[Frontend] BASE_URL should be defined in /common/main.js');
+            return;
+        }
+        console.log('[Frontend] BASE_URL is defined:', BASE_URL);
+
+        console.log('[Frontend] Checking if TOKEN is defined...');
+        if (typeof TOKEN === 'undefined') {
+            console.error('[Frontend] CRITICAL ERROR: TOKEN is not defined!');
+            console.error('[Frontend] Please authorize first at category-auth.html');
+            return;
+        }
+        console.log('[Frontend] TOKEN is defined');
+
+        const fullUrl = `${BASE_URL}/api/escrow/create`;
+        console.log('[Frontend] Full API URL:', fullUrl);
+
+        const requestBody = { token: TOKEN };
+        console.log('[Frontend] Request body prepared');
+
+        console.log('[Frontend] -----------------------------------------------------------');
+        console.log('[Frontend] Initiating fetch request...');
+        console.log('[Frontend] This will call: POST /v1/payments/pay (via backend)');
+        console.log('[Frontend] Using product code: ESCROW_PAYMENT (51051000101000100008)');
+
+        fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+        })
+        .then(res => {
+            console.log('[Frontend] -----------------------------------------------------------');
+            console.log('[Frontend] FETCH RESPONSE RECEIVED');
+            console.log('[Frontend] Response status:', res.status);
+            console.log('[Frontend] Response OK?', res.ok);
+            console.log('[Frontend] -----------------------------------------------------------');
+
+            if (!res.ok) {
+                console.error('[Frontend] HTTP Error Response');
+                console.error('[Frontend] Status code indicates failure:', res.status);
+            }
+
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] -----------------------------------------------------------');
+            console.log('[Frontend] PARSING RESPONSE DATA');
+            console.log('[Frontend] Data type:', typeof data);
+
+            if (typeof data === 'string') {
+                console.error('[Frontend] Response is STRING (expected JSON object)');
+                console.error('[Frontend] Raw response text:', data);
+                console.log('=================================================================\n');
+                return;
+            }
+
+            console.log('[Frontend] Response data (full):', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object' && data.paymentUrl && data.paymentId) {
+                escrowState.paymentUrl = data.paymentUrl;
+                escrowState.paymentId = data.paymentId;
+                escrowState.paymentAmount = data.amount;
+                escrowState.currentStep = 1;
+
+                console.log('[Frontend] SUCCESS: Payment created');
+                console.log('[Frontend] Payment URL:', data.paymentUrl);
+                console.log('[Frontend] Payment ID:', data.paymentId);
+                console.log('[Frontend] Next step: Click "Execute Payment" button');
+                console.log('=================================================================\n');
+
+                enableButton('payButton');
+                disableButton('acceptButton');
+
+            } else {
+                console.error('[Frontend] VALIDATION FAILED: Missing paymentUrl or paymentId');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.log('[Frontend] -----------------------------------------------------------');
+            console.error('[Frontend] FETCH EXCEPTION CAUGHT');
+            console.error('[Frontend] Error message:', error.message);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // STEP 2: EXECUTE PAYMENT (JSAPI)
+    // =========================================================================
+    function executePayment() {
+        if (escrowState.paymentUrl === '') {
+            console.error('[Frontend] ERROR: Payment URL not available');
+            console.error('[Frontend] Please click "Create Escrow Payment" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 2: EXECUTE PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Opening wallet payment page...');
+        console.log('[Frontend] Payment URL:', escrowState.paymentUrl);
+        console.log('[Frontend] Calling AlipayJSBridge.call("tradePay") JSAPI...');
+
+        AlipayJSBridge.call('tradePay', {
+            tradeNO: escrowState.paymentUrl
+        }, function(res) {
+            console.log('[Frontend] JSAPI callback received:', JSON.stringify(res, null, 2));
+
+            if (res.resultCode === '9000') {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT SUCCESS CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Payment completed successfully!');
+                console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                console.log('[Frontend] Amount:', escrowState.paymentAmount);
+                console.log('[Frontend] NOTE: Payment is in ESCROW - merchant must accept!');
+                console.log('[Frontend] Next step: Click "Merchant Accept Payment" button');
+                console.log('=================================================================\n');
+
+                escrowState.currentStep = 2;
+                enableButton('acceptButton');
+
+            } else {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT FAIL/CANCEL CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Result code:', res.resultCode);
+                console.log('[Frontend] Memo:', res.memo);
+
+                if (res.resultCode === '6001') {
+                    console.log('[Frontend] User CANCELLED the payment');
+                } else if (res.resultCode === '4000') {
+                    console.log('[Frontend] Payment FAILED');
+                } else {
+                    console.log('[Frontend] Other result code:', res.resultCode);
+                }
+                console.log('=================================================================\n');
+            }
+        });
+
+        console.log('[Frontend] Waiting for user to complete payment in wallet...');
+    }
+
+    // =========================================================================
+    // STEP 3: MERCHANT ACCEPT PAYMENT
+    // =========================================================================
+    function merchantAccept() {
+        if (escrowState.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            console.error('[Frontend] Please complete payment first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 3: MERCHANT ACCEPT PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Merchant accepting escrow payment...');
+        console.log('[Frontend] Payment ID:', escrowState.paymentId);
+        console.log('[Frontend] Sending to backend: POST /api/escrow/merchant-accept');
+
+        fetch(`${BASE_URL}/api/escrow/merchant-accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                paymentId: escrowState.paymentId
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                if (data.resultStatus === 'S') {
+                    console.log('[Frontend] SUCCESS: Merchant accepted payment');
+                    console.log('[Frontend] Result Code:', data.resultCode);
+                    console.log('[Frontend] Result Message:', data.resultMessage);
+                    console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                    console.log('[Frontend] ESCROW PAYMENT FLOW COMPLETED!');
+                    console.log('[Frontend] Funds released to merchant.');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'U') {
+                    console.log('[Frontend] Merchant accept status UNKNOWN (U)');
+                    console.log('[Frontend] You may need to query the status later');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'F') {
+                    console.log('[Frontend] Merchant accept FAILED (F)');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+                    console.log('=================================================================\n');
+                }
+            } else {
+                console.error('[Frontend] ERROR: Invalid response format');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to accept payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+    function enableButton(buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        }
+    }
+
+    function disableButton(buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.style.cursor = 'not-allowed';
+        }
+    }
+</script>
+
+</html>

@@ -108,7 +108,8 @@ class Header extends HTMLElement {
             'pushNotification.html': 'category-messages.html',
             'inquiryUserCardList.html': 'category-auth.html',
             'uploadFile.html': 'category-network.html',
-            'share.html': 'category-device.html'
+            'share.html': 'category-device.html',
+            'escrow.html': 'category-auth.html'
         };
         return pageCategories[filename] || null;
     }
@@ -162,7 +163,8 @@ class Header extends HTMLElement {
             'pushNotification.html': 'Send Notification',
             'inquiryUserCardList.html': 'Inquiry User Card List',
             'uploadFile.html': 'Upload File',
-            'share.html': 'Share'
+            'share.html': 'Share',
+            'escrow.html': 'Escrow'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
