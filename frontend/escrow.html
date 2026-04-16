@@ -14,9 +14,25 @@
         <p class="text-center text-gray-500">Escrow payment flow - Merchant must accept the payment after customer pays</p>
 
         <div class="flex flex-col gap-2 mb-4 px-4">
-            <button onclick="createEscrowPayment()"
+            <button onclick="getAuthCode()"
                 class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
-                1. Create Escrow Payment
+                1. Get Auth Code
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="applyCodeButton" onclick="applyCode()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                2. Apply Code
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="createPaymentButton" onclick="createEscrowPayment()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                3. Create Escrow Payment
             </button>
         </div>
 
@@ -24,7 +40,7 @@
             <button id="payButton" onclick="executePayment()"
                 class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
                 disabled>
-                2. Execute Payment
+                4. Execute Payment
             </button>
         </div>
 
@@ -32,7 +48,33 @@
             <button id="acceptButton" onclick="merchantAccept()"
                 class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md"
                 disabled>
-                3. Merchant Accept Payment
+                5. Merchant Accept Payment
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="confirmButton" onclick="confirmOrder()"
+                class="bg-green-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                6. Customer Confirm Order
+            </button>
+        </div>
+
+        <p class="text-center text-gray-500 mt-4">Optional Actions</p>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="cancelButton" onclick="cancelPayment()"
+                class="bg-red-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                Cancel Payment (Before Accept)
+            </button>
+        </div>
+
+        <div class="flex flex-col gap-2 mb-4 px-4">
+            <button id="voidButton" onclick="voidPayment()"
+                class="bg-red-400 text-white px-4 py-2 font-bold w-full rounded-md"
+                disabled>
+                Void Payment (After Accept)
             </button>
         </div>
 
@@ -47,6 +89,8 @@
     // STATE MANAGEMENT
     // =========================================================================
     const escrowState = {
+        authCode: '',
+        token: '',
         paymentUrl: '',
         paymentId: '',
         paymentAmount: 0,
@@ -54,34 +98,123 @@
     };
 
     // =========================================================================
-    // STEP 1: CREATE ESCROW PAYMENT
+    // STEP 1: GET AUTH CODE
+    // =========================================================================
+    function getAuthCode() {
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 1: GET AUTH CODE');
+        console.log('=================================================================');
+        console.log('[Frontend] Requesting auth code from wallet...');
+
+        my.getAuthCode({
+            scopes: ['auth_base', 'USER_ID'],
+            success: (res) => {
+                console.log('[Frontend] SUCCESS: Auth code retrieved');
+                console.log('[Frontend] Auth code:', res.authCode);
+                console.log('[Frontend] Auth code length:', res.authCode.length);
+
+                escrowState.authCode = res.authCode;
+                escrowState.currentStep = 1;
+
+                console.log('[Frontend] Next step: Click "Apply Code" button');
+                console.log('=================================================================\n');
+
+                enableButton('applyCodeButton');
+                disableButton('createPaymentButton');
+                disableButton('payButton');
+                disableButton('acceptButton');
+                disableButton('confirmButton');
+                disableButton('cancelButton');
+                disableButton('voidButton');
+            },
+            fail: (res) => {
+                console.error('[Frontend] ERROR: Auth code retrieval failed');
+                console.error('[Frontend] Error scopes:', res.authErrorScopes);
+                console.log('=================================================================\n');
+            },
+        });
+    }
+
+    // =========================================================================
+    // STEP 2: APPLY CODE (EXCHANGE FOR TOKEN)
+    // =========================================================================
+    function applyCode() {
+        if (escrowState.authCode === '') {
+            console.error('[Frontend] ERROR: Auth code not available');
+            console.error('[Frontend] Please click "Get Auth Code" first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 2: APPLY CODE (TOKEN EXCHANGE)');
+        console.log('=================================================================');
+        console.log('[Frontend] Sending auth code to backend...');
+        console.log('[Frontend] Auth code (first 20 chars):', escrowState.authCode.substring(0, 20) + '...');
+
+        fetch(`${BASE_URL}/api/auth/apply-token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                'auth_code': escrowState.authCode,
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] SUCCESS: Response received from backend');
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object' && data.token) {
+                escrowState.token = data.token;
+                escrowState.currentStep = 2;
+
+                console.log('[Frontend] Token saved to state (first 20 chars):', data.token.substring(0, 20) + '...');
+                console.log('[Frontend] Authentication complete');
+                console.log('[Frontend] Next step: Click "Create Escrow Payment" button');
+                console.log('=================================================================\n');
+
+                enableButton('createPaymentButton');
+                disableButton('payButton');
+                disableButton('acceptButton');
+                disableButton('confirmButton');
+                disableButton('cancelButton');
+                disableButton('voidButton');
+
+            } else {
+                console.error('[Frontend] ERROR: No token in response');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed during token exchange');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // STEP 3: CREATE ESCROW PAYMENT
     // =========================================================================
     function createEscrowPayment() {
-        console.log('=================================================================');
-        console.log('[Frontend] STEP 1: CREATE ESCROW PAYMENT');
-        console.log('=================================================================');
-
-        console.log('[Frontend] DIAGNOSTIC CHECKS:');
-        console.log('[Frontend] Checking if BASE_URL is defined...');
-        if (typeof BASE_URL === 'undefined') {
-            console.error('[Frontend] CRITICAL ERROR: BASE_URL is not defined!');
-            console.error('[Frontend] BASE_URL should be defined in /common/main.js');
+        if (escrowState.token === '') {
+            console.error('[Frontend] ERROR: Token not available');
+            console.error('[Frontend] Please complete authentication first');
             return;
         }
-        console.log('[Frontend] BASE_URL is defined:', BASE_URL);
 
-        console.log('[Frontend] Checking if TOKEN is defined...');
-        if (typeof TOKEN === 'undefined') {
-            console.error('[Frontend] CRITICAL ERROR: TOKEN is not defined!');
-            console.error('[Frontend] Please authorize first at category-auth.html');
-            return;
-        }
-        console.log('[Frontend] TOKEN is defined');
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 3: CREATE ESCROW PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Using token (first 20 chars):', escrowState.token.substring(0, 20) + '...');
 
         const fullUrl = `${BASE_URL}/api/escrow/create`;
         console.log('[Frontend] Full API URL:', fullUrl);
 
-        const requestBody = { token: TOKEN };
+        const requestBody = { token: escrowState.token };
         console.log('[Frontend] Request body prepared');
 
         console.log('[Frontend] -----------------------------------------------------------');
@@ -128,7 +261,7 @@
                 escrowState.paymentUrl = data.paymentUrl;
                 escrowState.paymentId = data.paymentId;
                 escrowState.paymentAmount = data.amount;
-                escrowState.currentStep = 1;
+                escrowState.currentStep = 3;
 
                 console.log('[Frontend] SUCCESS: Payment created');
                 console.log('[Frontend] Payment URL:', data.paymentUrl);
@@ -138,6 +271,9 @@
 
                 enableButton('payButton');
                 disableButton('acceptButton');
+                disableButton('confirmButton');
+                enableButton('cancelButton');
+                disableButton('voidButton');
 
             } else {
                 console.error('[Frontend] VALIDATION FAILED: Missing paymentUrl or paymentId');
@@ -153,7 +289,7 @@
     }
 
     // =========================================================================
-    // STEP 2: EXECUTE PAYMENT (JSAPI)
+    // STEP 4: EXECUTE PAYMENT (JSAPI)
     // =========================================================================
     function executePayment() {
         if (escrowState.paymentUrl === '') {
@@ -163,45 +299,89 @@
         }
 
         console.log('=================================================================');
-        console.log('[Frontend] STEP 2: EXECUTE PAYMENT');
+        console.log('[Frontend] STEP 4: EXECUTE PAYMENT');
         console.log('=================================================================');
         console.log('[Frontend] Opening wallet payment page...');
         console.log('[Frontend] Payment URL:', escrowState.paymentUrl);
-        console.log('[Frontend] Calling AlipayJSBridge.call("tradePay") JSAPI...');
+        console.log('[Frontend] Payment ID:', escrowState.paymentId);
+        console.log('[Frontend] Calling my.tradePay() JSAPI...');
 
-        AlipayJSBridge.call('tradePay', {
-            tradeNO: escrowState.paymentUrl
-        }, function(res) {
-            console.log('[Frontend] JSAPI callback received:', JSON.stringify(res, null, 2));
-
-            if (res.resultCode === '9000') {
+        my.tradePay({
+            paymentUrl: escrowState.paymentUrl,
+            success: (res) => {
                 console.log('=================================================================');
                 console.log('[Frontend] PAYMENT SUCCESS CALLBACK');
                 console.log('=================================================================');
-                console.log('[Frontend] Payment completed successfully!');
-                console.log('[Frontend] Payment ID:', escrowState.paymentId);
-                console.log('[Frontend] Amount:', escrowState.paymentAmount);
-                console.log('[Frontend] NOTE: Payment is in ESCROW - merchant must accept!');
-                console.log('[Frontend] Next step: Click "Merchant Accept Payment" button');
-                console.log('=================================================================\n');
-
-                escrowState.currentStep = 2;
-                enableButton('acceptButton');
-
-            } else {
-                console.log('=================================================================');
-                console.log('[Frontend] PAYMENT FAIL/CANCEL CALLBACK');
-                console.log('=================================================================');
+                console.log('[Frontend] Success response:', JSON.stringify(res, null, 2));
                 console.log('[Frontend] Result code:', res.resultCode);
-                console.log('[Frontend] Memo:', res.memo);
 
-                if (res.resultCode === '6001') {
-                    console.log('[Frontend] User CANCELLED the payment');
-                } else if (res.resultCode === '4000') {
-                    console.log('[Frontend] Payment FAILED');
+                if (res.resultCode === '9000') {
+                    console.log('[Frontend] Payment SUCCESSFUL (code: 9000)');
+                    console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                    console.log('[Frontend] Amount:', escrowState.paymentAmount);
+                    console.log('[Frontend] NOTE: Payment is in ESCROW - merchant must accept!');
+                    console.log('[Frontend] Next step: Click "Merchant Accept Payment" button');
+                    console.log('=================================================================\n');
+
+                    escrowState.currentStep = 4;
+                    enableButton('acceptButton');
+                    enableButton('cancelButton');
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
+                } else if (res.resultCode === '8000') {
+                    console.log('[Frontend] Trade PROCESSING (code: 8000)');
+                    console.log('[Frontend] Next step: Click "Merchant Accept Payment" button');
+                    console.log('=================================================================\n');
+
+                    escrowState.currentStep = 4;
+                    enableButton('acceptButton');
+                    enableButton('cancelButton');
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
+                } else if (res.resultCode === '6004') {
+                    console.log('[Frontend] Unknown result, may be success (code: 6004)');
+                    console.log('[Frontend] Next step: Click "Merchant Accept Payment" button');
+                    console.log('=================================================================\n');
+
+                    escrowState.currentStep = 4;
+                    enableButton('acceptButton');
+                    enableButton('cancelButton');
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
                 } else {
                     console.log('[Frontend] Other result code:', res.resultCode);
+                    console.log('=================================================================\n');
                 }
+            },
+            fail: (res) => {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT FAIL CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Fail response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] Result code:', res.resultCode);
+
+                if (res.resultCode === '4000') {
+                    console.log('[Frontend] Payment FAILED (code: 4000)');
+                } else if (res.resultCode === '6001') {
+                    console.log('[Frontend] User CANCELLED payment (code: 6001)');
+                } else if (res.resultCode === '6002') {
+                    console.log('[Frontend] Network EXCEPTION (code: 6002)');
+                } else {
+                    console.log('[Frontend] Other error code:', res.resultCode);
+                }
+                console.log('=================================================================\n');
+            },
+            complete: (res) => {
+                console.log('=================================================================');
+                console.log('[Frontend] PAYMENT COMPLETE CALLBACK');
+                console.log('=================================================================');
+                console.log('[Frontend] Complete response:', JSON.stringify(res, null, 2));
+                console.log('[Frontend] NOTE: This callback executes after success OR fail');
+                console.log('[Frontend] Next: Backend should receive webhook notification');
+                console.log('[Frontend] Check backend logs for webhook callback from wallet');
                 console.log('=================================================================\n');
             }
         });
@@ -210,7 +390,7 @@
     }
 
     // =========================================================================
-    // STEP 3: MERCHANT ACCEPT PAYMENT
+    // STEP 5: MERCHANT ACCEPT PAYMENT
     // =========================================================================
     function merchantAccept() {
         if (escrowState.paymentId === '') {
@@ -220,7 +400,7 @@
         }
 
         console.log('=================================================================');
-        console.log('[Frontend] STEP 3: MERCHANT ACCEPT PAYMENT');
+        console.log('[Frontend] STEP 5: MERCHANT ACCEPT PAYMENT');
         console.log('=================================================================');
         console.log('[Frontend] Merchant accepting escrow payment...');
         console.log('[Frontend] Payment ID:', escrowState.paymentId);
@@ -248,9 +428,14 @@
                     console.log('[Frontend] Result Code:', data.resultCode);
                     console.log('[Frontend] Result Message:', data.resultMessage);
                     console.log('[Frontend] Payment ID:', escrowState.paymentId);
-                    console.log('[Frontend] ESCROW PAYMENT FLOW COMPLETED!');
-                    console.log('[Frontend] Funds released to merchant.');
+                    console.log('[Frontend] Next step: Customer should confirm order');
                     console.log('=================================================================\n');
+
+                    escrowState.currentStep = 5;
+                    enableButton('confirmButton');
+                    enableButton('voidButton');
+                    disableButton('acceptButton');
+                    disableButton('cancelButton');
 
                 } else if (data.resultStatus === 'U') {
                     console.log('[Frontend] Merchant accept status UNKNOWN (U)');
@@ -270,6 +455,227 @@
         })
         .catch(error => {
             console.error('[Frontend] ERROR: Failed to accept payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // STEP 6: CUSTOMER CONFIRM ORDER
+    // =========================================================================
+    function confirmOrder() {
+        if (escrowState.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            console.error('[Frontend] Please complete payment first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] STEP 6: CUSTOMER CONFIRM ORDER');
+        console.log('=================================================================');
+        console.log('[Frontend] Customer confirming the order...');
+        console.log('[Frontend] Payment ID:', escrowState.paymentId);
+        console.log('[Frontend] Sending to backend: POST /api/escrow/confirm');
+
+        fetch(`${BASE_URL}/api/escrow/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                paymentId: escrowState.paymentId
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                if (data.resultStatus === 'S') {
+                    console.log('[Frontend] SUCCESS: Customer confirmed order');
+                    console.log('[Frontend] Result Code:', data.resultCode);
+                    console.log('[Frontend] Result Message:', data.resultMessage);
+                    console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                    if (data.confirmId) {
+                        console.log('[Frontend] Confirm ID:', data.confirmId);
+                    }
+                    if (data.confirmTime) {
+                        console.log('[Frontend] Confirm Time:', data.confirmTime);
+                    }
+                    console.log('[Frontend] ESCROW PAYMENT FLOW COMPLETED!');
+                    console.log('[Frontend] Funds released to merchant.');
+                    console.log('=================================================================\n');
+
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
+                } else if (data.resultStatus === 'U') {
+                    console.log('[Frontend] Confirm order status UNKNOWN (U)');
+                    console.log('[Frontend] You may need to query the status later');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'F') {
+                    console.log('[Frontend] Confirm order FAILED (F)');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+                    console.log('=================================================================\n');
+                }
+            } else {
+                console.error('[Frontend] ERROR: Invalid response format');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to confirm order');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // OPTIONAL: CANCEL PAYMENT
+    // =========================================================================
+    function cancelPayment() {
+        if (escrowState.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            console.error('[Frontend] Please complete payment first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] CANCEL PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Cancelling escrow payment...');
+        console.log('[Frontend] Payment ID:', escrowState.paymentId);
+        console.log('[Frontend] Sending to backend: POST /api/escrow/cancel');
+
+        fetch(`${BASE_URL}/api/escrow/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                paymentId: escrowState.paymentId
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                if (data.resultStatus === 'S') {
+                    console.log('[Frontend] SUCCESS: Payment cancelled');
+                    console.log('[Frontend] Result Code:', data.resultCode);
+                    console.log('[Frontend] Result Message:', data.resultMessage);
+                    console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                    console.log('[Frontend] Payment has been cancelled successfully');
+                    console.log('=================================================================\n');
+
+                    disableButton('acceptButton');
+                    disableButton('cancelButton');
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
+                } else if (data.resultStatus === 'U') {
+                    console.log('[Frontend] Cancel payment status UNKNOWN (U)');
+                    console.log('[Frontend] You may need to query the status later');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'F') {
+                    console.log('[Frontend] Cancel payment FAILED (F)');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+                    console.log('=================================================================\n');
+                }
+            } else {
+                console.error('[Frontend] ERROR: Invalid response format');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to cancel payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+
+    // =========================================================================
+    // OPTIONAL: VOID PAYMENT
+    // =========================================================================
+    function voidPayment() {
+        if (escrowState.paymentId === '') {
+            console.error('[Frontend] ERROR: Payment ID not available');
+            console.error('[Frontend] Please complete payment first');
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] VOID PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Voiding escrow payment...');
+        console.log('[Frontend] Payment ID:', escrowState.paymentId);
+        console.log('[Frontend] Sending to backend: POST /api/escrow/void');
+
+        fetch(`${BASE_URL}/api/escrow/void`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                paymentId: escrowState.paymentId
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (typeof data === 'object') {
+                if (data.resultStatus === 'S') {
+                    console.log('[Frontend] SUCCESS: Payment voided');
+                    console.log('[Frontend] Result Code:', data.resultCode);
+                    console.log('[Frontend] Result Message:', data.resultMessage);
+                    console.log('[Frontend] Payment ID:', escrowState.paymentId);
+                    if (data.voidId) {
+                        console.log('[Frontend] Void ID:', data.voidId);
+                    }
+                    if (data.voidTime) {
+                        console.log('[Frontend] Void Time:', data.voidTime);
+                    }
+                    console.log('[Frontend] Payment has been voided successfully');
+                    console.log('=================================================================\n');
+
+                    disableButton('acceptButton');
+                    disableButton('cancelButton');
+                    disableButton('confirmButton');
+                    disableButton('voidButton');
+
+                } else if (data.resultStatus === 'U') {
+                    console.log('[Frontend] Void payment status UNKNOWN (U)');
+                    console.log('[Frontend] You may need to query the status later');
+                    console.log('=================================================================\n');
+
+                } else if (data.resultStatus === 'F') {
+                    console.log('[Frontend] Void payment FAILED (F)');
+                    console.log('[Frontend] Error code:', data.resultCode);
+                    console.log('[Frontend] Error message:', data.resultMessage);
+                    console.log('=================================================================\n');
+                }
+            } else {
+                console.error('[Frontend] ERROR: Invalid response format');
+                console.log('=================================================================\n');
+            }
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to void payment');
             console.error('[Frontend] Error details:', error);
             console.log('=================================================================\n');
         });

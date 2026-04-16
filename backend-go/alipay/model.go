@@ -219,3 +219,53 @@ type InquiryPaymentResponse struct {
 	Transactions     []Transaction `json:"transactions,omitempty"`
 	ExtendInfo       string        `json:"extendInfo,omitempty"`
 }
+
+// Escrow Payment - Merchant Accept types
+type MerchantAcceptRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+type MerchantAcceptResponse struct {
+	Result           Result `json:"result"`
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+// Escrow Payment - Confirm Order types
+type ConfirmOrderRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+	ConfirmRequestID string `json:"confirmRequestId,omitempty"`
+}
+
+type ConfirmOrderResponse struct {
+	Result      Result `json:"result"`
+	ConfirmID   string `json:"confirmId,omitempty"`
+	ConfirmTime string `json:"confirmTime,omitempty"`
+}
+
+// Escrow Payment - Cancel Payment types
+type CancelPaymentRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+type CancelPaymentResponse struct {
+	Result           Result `json:"result"`
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+}
+
+// Escrow Payment - Void types
+type VoidRequest struct {
+	PaymentID        string `json:"paymentId,omitempty"`
+	PaymentRequestID string `json:"paymentRequestId,omitempty"`
+	VoidRequestID    string `json:"voidRequestId,omitempty"`
+}
+
+type VoidResponse struct {
+	Result   Result `json:"result"`
+	VoidID   string `json:"voidId,omitempty"`
+	VoidTime string `json:"voidTime,omitempty"`
+}

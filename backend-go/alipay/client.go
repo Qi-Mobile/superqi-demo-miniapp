@@ -183,5 +183,14 @@ func (client *Client) sendRequestWithInterface(path, method string, headers map[
 		return nil, err
 	}
 
+	// Log response for debugging
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	if len(body) == 0 {
+		return nil, errors.New("empty response body from API")
+	}
+
 	return body, nil
 }
