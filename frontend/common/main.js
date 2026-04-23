@@ -109,7 +109,9 @@ class Header extends HTMLElement {
             'inquiryUserCardList.html': 'category-auth.html',
             'uploadFile.html': 'category-network.html',
             'share.html': 'category-device.html',
-            'escrow.html': 'category-auth.html'
+            'escrow.html': 'category-auth.html',
+            'openLocation.html': 'category-location.html',
+            'chooseLocation.html': 'category-location.html'
         };
         return pageCategories[filename] || null;
     }
@@ -164,7 +166,9 @@ class Header extends HTMLElement {
             'inquiryUserCardList.html': 'Inquiry User Card List',
             'uploadFile.html': 'Upload File',
             'share.html': 'Share',
-            'escrow.html': 'Escrow'
+            'escrow.html': 'Escrow',
+            'openLocation.html': 'Open Location',
+            'chooseLocation.html': 'Choose Location'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }
