@@ -87,6 +87,14 @@ func InitAlipayClient() error {
 	return nil
 }
 
+func (client *Client) GetGatewayURL() string {
+	return client.config.GatewayURL
+}
+
+func (client *Client) BuildHeadersPublic(method, path string, params interface{}) (map[string]string, error) {
+	return client.buildHeaders(method, path, params)
+}
+
 func (client *Client) buildHeaders(method, path string, params interface{}) (map[string]string, error) {
 	currentTimestamp := time.Now().Format("2006-01-02T15:04:05-07:00")
 	paramsJSON, err := json.Marshal(params)

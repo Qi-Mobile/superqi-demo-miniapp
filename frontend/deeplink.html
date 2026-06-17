@@ -1,0 +1,66 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <p class="text-sm text-gray-500 p-4">
+            Build a <code>qicardwallet://</code> deeplink to another miniapp and open it.
+        </p>
+
+        <div class="flex flex-col gap-3 mb-4 px-4">
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Miniapp ID
+                <input id="miniappId" type="text" value="3488010249277341"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Appended URL part (path &amp; query)
+                <input id="appendedUrlPart" type="text" value="getSystemInfo.html"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <button onclick="openDeepLink()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Open Deep Link</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function buildDeepLink(miniappId, appendedUrlPart) {
+        return 'qicardwallet://qicard/deeplink.htm?action=miniapp'
+            + '&miniappId=' + encodeURIComponent(miniappId)
+            + '&_griver_appended_url_part=' + encodeURIComponent(appendedUrlPart);
+    }
+
+    function openDeepLink() {
+        const miniappId = document.getElementById('miniappId').value.trim();
+        const appendedUrlPart = document.getElementById('appendedUrlPart').value.trim();
+
+        if (!miniappId) {
+            my.alert({ content: 'Please enter a miniapp ID' });
+            return;
+        }
+
+        const url = buildDeepLink(miniappId, appendedUrlPart);
+        console.log('[deeplink] opening: ' + url);
+
+        window.location.replace(url);
+    }
+</script>
+
+</html>

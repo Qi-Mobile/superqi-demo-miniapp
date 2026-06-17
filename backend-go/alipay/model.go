@@ -25,6 +25,13 @@ type InquiryUserCardListResponse struct {
 	} `json:"cardList"`
 }
 
+type InquiryUserAccountListResponse struct {
+	Result      Result `json:"result"`
+	AccountList []struct {
+		AccountNumber string `json:"accountNumber"`
+	} `json:"accountList"`
+}
+
 type InquiryUserInfoResponse struct {
 	Result   Result `json:"result"`
 	UserInfo struct {

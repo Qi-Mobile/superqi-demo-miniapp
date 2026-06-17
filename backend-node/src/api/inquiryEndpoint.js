@@ -1,4 +1,4 @@
-const { applyToken, inquiryUserCardList } = require('../alipay');
+const { applyToken, inquiryUserCardList, inquiryUserAccountList } = require('../alipay');
 
 function initInquiryEndpoint(router) {
     // Endpoint to exchange auth code for access token (specifically for card inquiry)
@@ -96,6 +96,60 @@ function initInquiryEndpoint(router) {
 
         } catch (err) {
             console.log(`[ERROR] Card inquiry endpoint error: ${err.message}`);
+            console.log('=================================================================\n');
+            return res.status(500).json({ error: err.message });
+        }
+    });
+
+    // Endpoint to get user account list using access token
+    router.post('/users/inquiry-accounts', async (req, res) => {
+        try {
+            const { accessToken } = req.body;
+
+            if (!accessToken) {
+                return res.status(400).json({ error: 'accessToken is required' });
+            }
+
+            console.log('=================================================================');
+            console.log('STARTING USER ACCOUNT LIST INQUIRY');
+            console.log('=================================================================');
+            console.log('[INFO] Access token received from frontend');
+            console.log('[INFO] Calling Alipay+ inquiryUserAccountList API...');
+
+            const accountListResponse = await inquiryUserAccountList(accessToken);
+
+            console.log('[SUCCESS] Account list response received:');
+            console.log(JSON.stringify(accountListResponse, null, 2));
+            console.log('');
+
+            if (accountListResponse.result.resultStatus === 'S') {
+                const accountCount = accountListResponse.accountList ? accountListResponse.accountList.length : 0;
+                console.log(`[SUCCESS] Account inquiry successful - ${accountCount} account(s) found`);
+
+                if (accountCount > 0) {
+                    console.log('[INFO] Account details:');
+                    accountListResponse.accountList.forEach((account, index) => {
+                        console.log(`  Account ${index + 1}:`);
+                        console.log(`    Account Number: ${account.accountNumber}`);
+                        console.log(`    Account Type: ${account.accountType}`);
+                    });
+                } else {
+                    console.log('[INFO] User has no accounts bound');
+                }
+            } else if (accountListResponse.result.resultStatus === 'F') {
+                console.log(`[ERROR] Account inquiry failed: ${accountListResponse.result.resultMessage}`);
+                console.log(`[ERROR] Result code: ${accountListResponse.result.resultCode}`);
+            } else if (accountListResponse.result.resultStatus === 'U') {
+                console.log(`[WARNING] Account inquiry status unknown: ${accountListResponse.result.resultMessage}`);
+            }
+
+            console.log('[SUCCESS] Returning account list to frontend');
+            console.log('=================================================================\n');
+
+            return res.json(accountListResponse);
+
+        } catch (err) {
+            console.log(`[ERROR] Account inquiry endpoint error: ${err.message}`);
             console.log('=================================================================\n');
             return res.status(500).json({ error: err.message });
         }

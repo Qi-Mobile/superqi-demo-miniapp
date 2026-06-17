@@ -16,7 +16,54 @@ type inquiryCardsRequest struct {
 	AccessToken string `json:"accessToken" validate:"required"`
 }
 
+type inquiryAccountsRequest struct {
+	AccessToken string `json:"accessToken" validate:"required"`
+}
+
+type generateSignatureRequest struct {
+	AccessToken string `json:"accessToken" validate:"required"`
+}
+
 func InitInquiryEndpoint(group fiber.Router) {
+	// Debug endpoint to generate Postman request details
+	group.Post("/users/inquiry-accounts/debug", func(ctx *fiber.Ctx) error {
+		var request generateSignatureRequest
+		if err := ctx.BodyParser(&request); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		}
+
+		log.Println("=================================================================")
+		log.Println("GENERATING POSTMAN REQUEST FOR inquiryUserAccountList")
+		log.Println("=================================================================")
+
+		// Get the full request details from alipay client
+		requestBody := map[string]string{
+			"accessToken": request.AccessToken,
+		}
+		requestBodyJSON, _ := json.MarshalIndent(requestBody, "", "  ")
+
+		log.Println("\n📋 POSTMAN REQUEST DETAILS:")
+		log.Println("=================================================================")
+		log.Println("Method: POST")
+		log.Println("URL: " + alipay.Interface.GetGatewayURL() + "/v1/users/inquiryUserAccountList")
+		log.Println("\nHeaders:")
+
+		headers, _ := alipay.Interface.BuildHeadersPublic("POST", "/v1/users/inquiryUserAccountList", requestBody)
+		for key, value := range headers {
+			log.Printf("  %s: %s\n", key, value)
+		}
+
+		log.Println("\nBody (raw JSON):")
+		log.Println(string(requestBodyJSON))
+		log.Println("=================================================================")
+
+		return ctx.JSON(fiber.Map{
+			"method":  "POST",
+			"url":     alipay.Interface.GetGatewayURL() + "/v1/users/inquiryUserAccountList",
+			"headers": headers,
+			"body":    requestBody,
+		})
+	})
 	// Endpoint to exchange auth code for access token (specifically for card inquiry)
 	group.Post("/users/inquiry-cards/apply-token", func(ctx *fiber.Ctx) error {
 		var request applyTokenRequest
@@ -108,5 +155,54 @@ func InitInquiryEndpoint(group fiber.Router) {
 		log.Println("=================================================================\n")
 
 		return ctx.JSON(cardListResponse)
+	})
+
+	// Endpoint to get user account list using access token
+	group.Post("/users/inquiry-accounts", func(ctx *fiber.Ctx) error {
+		var request inquiryAccountsRequest
+		if err := ctx.BodyParser(&request); err != nil {
+			return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		}
+
+		log.Println("=================================================================")
+		log.Println("STARTING USER ACCOUNT LIST INQUIRY")
+		log.Println("=================================================================")
+		log.Println("[INFO] Access token received from frontend")
+		log.Println("[INFO] Calling Alipay+ inquiryUserAccountList API...")
+
+		accountListResponse, err := alipay.Interface.InquiryUserAccountList(request.AccessToken)
+		if err != nil {
+			log.Printf("[ERROR] Account inquiry failed: %v\n", err)
+			log.Println("=================================================================\n")
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+
+		accountListResponseJson, _ := json.MarshalIndent(accountListResponse, "", "  ")
+		log.Printf("[SUCCESS] Account list response received:\n%s\n\n", string(accountListResponseJson))
+
+		if accountListResponse.Result.ResultStatus == "S" {
+			accountCount := len(accountListResponse.AccountList)
+			log.Printf("[SUCCESS] Account inquiry successful - %d account(s) found\n", accountCount)
+
+			if accountCount > 0 {
+				log.Println("[INFO] Account details:")
+				for i, account := range accountListResponse.AccountList {
+					log.Printf("  Account %d:\n", i+1)
+					log.Printf("    Account Number: %s\n", account.AccountNumber)
+				}
+			} else {
+				log.Println("[INFO] User has no accounts bound")
+			}
+		} else if accountListResponse.Result.ResultStatus == "F" {
+			log.Printf("[ERROR] Account inquiry failed: %s\n", accountListResponse.Result.ResultMessage)
+			log.Printf("[ERROR] Result code: %s\n", accountListResponse.Result.ResultCode)
+		} else if accountListResponse.Result.ResultStatus == "U" {
+			log.Printf("[WARNING] Account inquiry status unknown: %s\n", accountListResponse.Result.ResultMessage)
+		}
+
+		log.Println("[SUCCESS] Returning account list to frontend")
+		log.Println("=================================================================\n")
+
+		return ctx.JSON(accountListResponse)
 	})
 }

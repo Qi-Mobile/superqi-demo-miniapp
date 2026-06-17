@@ -71,6 +71,19 @@ async function inquiryUserCardList(accessToken) {
     return JSON.parse(response.toString());
 }
 
+async function inquiryUserAccountList(accessToken) {
+    const client = getAlipayClient();
+    const path = '/v1/users/inquiryUserAccountList';
+    const params = {
+        accessToken: accessToken
+    };
+
+    const headers = client.buildHeaders('POST', path, params);
+    const response = await client.sendRequest(path, 'POST', headers, params);
+
+    return JSON.parse(response.toString());
+}
+
 async function pay(request) {
     const client = getAlipayClient();
     const path = '/v1/payments/pay';
@@ -175,6 +188,7 @@ module.exports = {
     inquiryUserInfo,
     prepareAuthorization,
     inquiryUserCardList,
+    inquiryUserAccountList,
     pay,
     refund,
     inquiryRefund,
