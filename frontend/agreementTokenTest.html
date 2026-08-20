@@ -1,0 +1,135 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Agreement Token Test</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <p class="text-sm text-gray-500 p-4">
+            Paste an access token obtained from the Agreement Payment flow and try to auto-deduct
+            money with it. This tests whether a stored access token is still valid for payments.
+        </p>
+
+        <div class="flex flex-col gap-3 mb-4 px-4">
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Access Token
+                <textarea id="accessToken" rows="3" placeholder="Paste the access token here"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal"></textarea>
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Customer ID
+                <input id="customerId" type="text" placeholder="Customer ID returned with the token"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Amount (IQD)
+                <input id="amount" type="number" value="1000"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Order description
+                <input id="orderDescription" type="text" value="Agreement token test payment"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <button onclick="payWithToken()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">
+                Pay With Access Token
+            </button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function payWithToken() {
+        const accessToken = document.getElementById('accessToken').value.trim();
+        const customerId = document.getElementById('customerId').value.trim();
+        const amount = parseInt(document.getElementById('amount').value, 10);
+        const orderDescription = document.getElementById('orderDescription').value.trim();
+
+        if (!accessToken) {
+            my.alert({ content: 'Please paste an access token' });
+            return;
+        }
+        if (!customerId) {
+            my.alert({ content: 'Please enter the customer ID' });
+            return;
+        }
+        if (!amount || amount <= 0) {
+            my.alert({ content: 'Please enter a valid amount' });
+            return;
+        }
+
+        console.log('=================================================================');
+        console.log('[Frontend] AGREEMENT TOKEN TEST: EXECUTE PAYMENT');
+        console.log('=================================================================');
+        console.log('[Frontend] Access token (first 20 chars):', accessToken.substring(0, 20) + '...');
+        console.log('[Frontend] Customer ID:', customerId);
+        console.log('[Frontend] Amount:', amount, 'IQD');
+        console.log('[Frontend] Sending to backend: POST /api/agreement/pay');
+
+        fetch(`${BASE_URL}/api/agreement/pay`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                accessToken: accessToken,
+                customerId: customerId,
+                amount: amount,
+                currency: 'IQD',
+                orderDescription: orderDescription
+            })
+        })
+        .then(res => {
+            console.log('[Frontend] Response status:', res.status);
+            return res.ok ? res.json() : res.text();
+        })
+        .then(data => {
+            if (typeof data === 'string') {
+                console.error('[Frontend] ERROR: Backend returned:', data);
+                console.log('=================================================================\n');
+                return;
+            }
+
+            console.log('[Frontend] Response data:', JSON.stringify(data, null, 2));
+
+            if (data.resultStatus === 'S' && data.resultCode === 'SUCCESS') {
+                console.log('[Frontend] TOKEN IS VALID - Payment SUCCESSFUL');
+                console.log('[Frontend] Payment ID:', data.paymentId);
+                console.log('[Frontend] Payment Time:', data.paymentTime);
+                console.log('[Frontend] Money auto-deducted without user interaction!');
+            } else if (data.resultStatus === 'U') {
+                console.log('[Frontend] Payment status UNKNOWN (U)');
+                console.log('[Frontend] Backend should poll /v1/payments/inquiryPayment for status');
+            } else {
+                console.log('[Frontend] Payment FAILED - token may be invalid or expired');
+                console.log('[Frontend] Error code:', data.resultCode);
+                console.log('[Frontend] Error message:', data.resultMessage);
+            }
+            console.log('=================================================================\n');
+        })
+        .catch(error => {
+            console.error('[Frontend] ERROR: Failed to execute payment');
+            console.error('[Frontend] Error details:', error);
+            console.log('=================================================================\n');
+        });
+    }
+</script>
+
+</html>

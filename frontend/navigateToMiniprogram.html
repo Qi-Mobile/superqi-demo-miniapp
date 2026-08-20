@@ -1,0 +1,71 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <p class="text-sm text-gray-500 p-4">
+            Test <code>my.navigateToMiniProgram</code> with an <code>appendedUrlPart</code> that carries
+            data in the URL. The target page parses the query params and displays them.
+        </p>
+
+        <div class="flex flex-col gap-3 mb-4 px-4">
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Miniapp ID (appId)
+                <input id="appId" type="text" value="3488010249277341"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Appended URL part
+                <input id="appendedUrlPart" type="text"
+                    value="/navigateReceiver.html?wd=five+year+plan&sa=fyb_n_homepage&rsv_dl=fyb_n_homepage&from=super&cl=3&tn=demotop10&fr=top1000&rsv_idx=2&hisfilter=1"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <button onclick="navigateToMiniProgram()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Navigate To Miniprogram</button>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function navigateToMiniProgram() {
+        const appId = document.getElementById('appId').value.trim();
+        const appendedUrlPart = document.getElementById('appendedUrlPart').value.trim();
+
+        if (!appId) {
+            my.alert({ content: 'Please enter a miniapp ID' });
+            return;
+        }
+
+        console.log('[navigate] appId: ' + appId);
+        console.log('[navigate] appendedUrlPart: ' + appendedUrlPart);
+
+        my.navigateToMiniProgram({
+            appId: appId,
+            appendedUrlPart: appendedUrlPart,
+            success: (res) => {
+                console.log('[navigate] success:', res);
+            },
+            fail: (err) => {
+                console.error('[navigate] fail:', err);
+            }
+        });
+    }
+</script>
+
+</html>

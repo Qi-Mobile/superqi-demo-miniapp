@@ -1,0 +1,65 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sample Miniapp</title>
+    <script src="/common/main.js"></script>
+    <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <link rel="stylesheet" href="/common/style.css">
+</head>
+
+<body>
+    <div class="flex flex-col w-full h-full min-h-full">
+        <miniapp-header></miniapp-header>
+
+        <p class="text-sm text-gray-500 p-4">
+            This page was opened via <code>my.navigateToMiniProgram</code>. It parses the query params
+            from the <code>appendedUrlPart</code> and displays them below.
+        </p>
+
+        <div class="flex flex-col gap-3 mb-4 px-4">
+            <div class="text-sm font-medium">Full URL</div>
+            <div id="fullUrl" class="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-600 break-all"></div>
+
+            <div class="text-sm font-medium">Parsed query params</div>
+            <div id="paramsList" class="border border-gray-300 rounded-md divide-y divide-gray-200"></div>
+        </div>
+
+        <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
+            <miniapp-console class="w-full h-full"></miniapp-console>
+        </section>
+    </div>
+</body>
+
+<script>
+    function renderQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        const container = document.getElementById('paramsList');
+
+        document.getElementById('fullUrl').textContent = window.location.href;
+
+        console.log('[navReceiver] location.href: ' + window.location.href);
+        console.log('[navReceiver] location.search: ' + (window.location.search || '(empty)'));
+
+        if ([...params].length === 0) {
+            container.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">No query params received</div>';
+            return;
+        }
+
+        container.innerHTML = [...params].map(([key, value]) =>
+            `<div class="px-3 py-2 text-sm flex justify-between gap-2">
+                <span class="font-medium">${key}</span>
+                <span class="text-gray-600 break-all">${value}</span>
+            </div>`
+        ).join('');
+
+        params.forEach((value, key) => {
+            console.log('[navReceiver] param ' + key + ' = ' + value);
+        });
+    }
+
+    window.addEventListener('load', renderQueryParams);
+</script>
+
+</html>

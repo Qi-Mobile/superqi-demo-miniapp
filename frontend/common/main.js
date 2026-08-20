@@ -1,4 +1,4 @@
-const BASE_URL = "http://172.20.10.3:1999";
+const BASE_URL = "http://172.20.10.5:1999";
 
 class Header extends HTMLElement {
     constructor() {
@@ -104,6 +104,7 @@ class Header extends HTMLElement {
             'openBrowser.html': 'category-network.html',
             'imageRelate.html': 'category-media.html',
             'removeSavedFile.html': 'category-file.html',
+            'chooseFileFromDisk.html': 'category-file.html',
             'sendInBox.html': 'category-messages.html',
             'pushNotification.html': 'category-messages.html',
             'inquiryUserCardList.html': 'category-auth.html',
@@ -113,7 +114,10 @@ class Header extends HTMLElement {
             'openLocation.html': 'category-location.html',
             'chooseLocation.html': 'category-location.html',
             'userAccountList.html': 'category-auth.html',
-            'deeplink.html': 'category-network.html'
+            'deeplink.html': 'category-network.html',
+            'deeplinkReceiver.html': 'category-network.html',
+            'navigateToMiniprogram.html': 'category-network.html'
+
         };
         return pageCategories[filename] || null;
     }
@@ -163,6 +167,7 @@ class Header extends HTMLElement {
             'openBrowser.html': 'Open Browser',
             'imageRelate.html': 'Preview and Save Image',
             'removeSavedFile.html': 'Remove Saved File',
+            'chooseFileFromDisk.html': 'Choose File From Disk',
             'sendInBox.html': 'Send Message',
             'pushNotification.html': 'Send Notification',
             'inquiryUserCardList.html': 'Inquiry User Card List',
@@ -172,7 +177,9 @@ class Header extends HTMLElement {
             'openLocation.html': 'Open Location',
             'chooseLocation.html': 'Choose Location',
             'userAccountList.html': 'User Account List',
-            'deeplink.html': 'Deep Link'
+            'deeplink.html': 'Deep Link',
+            'deeplinkReceiver.html': 'Deep Link Receiver',
+            'navigateToMiniprogram.html': 'Navigation to miniprogram'
         };
         return nameMap[filename] || filename.replace('.html', '');
     }

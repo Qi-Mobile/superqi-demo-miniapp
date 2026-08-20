@@ -25,8 +25,14 @@
             </label>
 
             <label class="flex flex-col gap-1 text-sm font-medium">
-                Appended URL part (path &amp; query)
-                <input id="appendedUrlPart" type="text" value="getSystemInfo.html"
+                Appended URL part (path)
+                <input id="appendedUrlPart" type="text" value="deeplinkReceiver.html"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Query params (key=value&amp;key=value)
+                <input id="queryParams" type="text" value="orderId=123&source=promo"
                     class="border border-gray-300 px-3 py-2 rounded-md font-normal">
             </label>
 
@@ -49,13 +55,15 @@
 
     function openDeepLink() {
         const miniappId = document.getElementById('miniappId').value.trim();
-        const appendedUrlPart = document.getElementById('appendedUrlPart').value.trim();
+        const path = document.getElementById('appendedUrlPart').value.trim();
+        const queryParams = document.getElementById('queryParams').value.trim();
 
         if (!miniappId) {
             my.alert({ content: 'Please enter a miniapp ID' });
             return;
         }
 
+        const appendedUrlPart = queryParams ? path + '?' + queryParams : path;
         const url = buildDeepLink(miniappId, appendedUrlPart);
         console.log('[deeplink] opening: ' + url);
 
