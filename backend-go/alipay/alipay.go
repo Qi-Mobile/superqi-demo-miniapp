@@ -178,6 +178,50 @@ func (client *Client) InquiryUserAccountList(accessToken string) (InquiryUserAcc
 	return body, err
 }
 
+func (client *Client) GenerateShortLink(requestId, appId, pagePath, queryParams, description string) (GenerateShortLinkResponse, error) {
+	const path = "/v1/miniapps/qrCode/generate"
+	params := map[string]string{
+		"requestId":       requestId,
+		"appId":           appId,
+		"appQrCodePage":   pagePath,
+		"appQrCodeParams": queryParams,
+		"appQrCodeDesc":   description,
+	}
+
+	// Log request
+	log.Println("=================================================================")
+	log.Println("[Alipay Client] REQUEST: POST", path)
+	log.Println("=================================================================")
+	requestJSON, _ := json.MarshalIndent(params, "", "  ")
+	log.Printf("[Alipay Client] Request Body:\n%s\n", string(requestJSON))
+
+	headers, err := client.buildHeaders("POST", path, params)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR building headers: %v\n", err)
+		return GenerateShortLinkResponse{}, err
+	}
+
+	response, err := client.sendRequest(path, "POST", headers, params)
+	if err != nil {
+		log.Printf("[Alipay Client] ERROR sending request: %v\n", err)
+		return GenerateShortLinkResponse{}, err
+	}
+
+	// Log response
+	log.Println("=================================================================")
+	log.Println("[Alipay Client] RESPONSE: POST", path)
+	log.Println("=================================================================")
+	var prettyResponse map[string]interface{}
+	json.Unmarshal(response, &prettyResponse)
+	responseJSON, _ := json.MarshalIndent(prettyResponse, "", "  ")
+	log.Printf("[Alipay Client] Response Body:\n%s\n", string(responseJSON))
+	log.Println("=================================================================")
+
+	var body GenerateShortLinkResponse
+	err = json.Unmarshal(response, &body)
+	return body, err
+}
+
 func (client *Client) Pay(request PaymentRequest) (PaymentResponse, error) {
 	const path = "/v1/payments/pay"
 

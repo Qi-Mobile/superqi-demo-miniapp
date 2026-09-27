@@ -84,6 +84,23 @@ async function inquiryUserAccountList(accessToken) {
     return JSON.parse(response.toString());
 }
 
+async function generateShortLink(requestId, appId, pagePath, queryParams, description) {
+    const client = getAlipayClient();
+    const path = '/v1/miniapps/qrCode/generate';
+    const params = {
+        requestId: requestId,
+        appId: appId,
+        appQrCodePage: pagePath,
+        appQrCodeParams: queryParams,
+        appQrCodeDesc: description
+    };
+
+    const headers = client.buildHeaders('POST', path, params);
+    const response = await client.sendRequest(path, 'POST', headers, params);
+
+    return JSON.parse(response.toString());
+}
+
 async function pay(request) {
     const client = getAlipayClient();
     const path = '/v1/payments/pay';
@@ -189,6 +206,7 @@ module.exports = {
     prepareAuthorization,
     inquiryUserCardList,
     inquiryUserAccountList,
+    generateShortLink,
     pay,
     refund,
     inquiryRefund,

@@ -32,6 +32,11 @@ type InquiryUserAccountListResponse struct {
 	} `json:"accountList"`
 }
 
+type GenerateShortLinkResponse struct {
+	Result    Result `json:"result"`
+	AppQrCode string `json:"appQrCode"`
+}
+
 type InquiryUserInfoResponse struct {
 	Result   Result `json:"result"`
 	UserInfo struct {

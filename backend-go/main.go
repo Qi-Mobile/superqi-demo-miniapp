@@ -36,6 +36,7 @@ func main() {
 	api.InitUploadFileEndpoint(apiGroup)
 	api.InitInquiryPaymentEndpoint(apiGroup)
 	api.InitEscrowEndpoint(apiGroup)
+	api.InitShortLinkEndpoint(apiGroup)
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {

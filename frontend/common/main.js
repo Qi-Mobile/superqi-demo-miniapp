@@ -177,7 +177,7 @@ class Header extends HTMLElement {
             'openLocation.html': 'Open Location',
             'chooseLocation.html': 'Choose Location',
             'userAccountList.html': 'User Account List',
-            'deeplink.html': 'Deep Link',
+            'deeplink.html': 'Short Link / QR Code',
             'deeplinkReceiver.html': 'Deep Link Receiver',
             'navigateToMiniprogram.html': 'Navigation to miniprogram'
         };

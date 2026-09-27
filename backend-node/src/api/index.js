@@ -4,6 +4,7 @@ const { initRefundEndpoint } = require('./refundEndpoint');
 const { initAgreementEndpoint } = require('./agreementEndpoint');
 const { initNotificationEndpoint } = require('./notificationEndpoint');
 const { initInquiryEndpoint } = require('./inquiryEndpoint');
+const { initShortLinkEndpoint } = require('./shortLinkEndpoint');
 
 module.exports = {
     initAuthEndpoint,
@@ -11,5 +12,6 @@ module.exports = {
     initRefundEndpoint,
     initAgreementEndpoint,
     initNotificationEndpoint,
-    initInquiryEndpoint
+    initInquiryEndpoint,
+    initShortLinkEndpoint
 };

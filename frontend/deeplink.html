@@ -6,6 +6,7 @@
     <title>Sample Miniapp</title>
     <script src="/common/main.js"></script>
     <script src="https://cdn.marmot-cloud.com/npm/hylid-bridge/2.10.0/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="/common/style.css">
 </head>
 
@@ -14,30 +15,52 @@
         <miniapp-header></miniapp-header>
 
         <p class="text-sm text-gray-500 p-4">
-            Build a <code>qicardwallet://</code> deeplink to another miniapp and open it.
+            Generate a SuperQi short link (e.g. <code>https://link.qi.iq/ref/...</code>) that opens a page inside a
+            miniapp. The link works as a QR code scanned from the phone camera or the SuperQi camera.
         </p>
 
         <div class="flex flex-col gap-3 mb-4 px-4">
             <label class="flex flex-col gap-1 text-sm font-medium">
                 Miniapp ID
-                <input id="miniappId" type="text" value="3488010249277341"
+                <input id="appId" type="text" value="3488010249277341"
                     class="border border-gray-300 px-3 py-2 rounded-md font-normal">
             </label>
 
             <label class="flex flex-col gap-1 text-sm font-medium">
-                Appended URL part (path)
-                <input id="appendedUrlPart" type="text" value="deeplinkReceiver.html"
+                Page path (optional, starts with / - empty opens the default page)
+                <input id="pagePath" type="text" value="/deeplinkReceiver.html"
                     class="border border-gray-300 px-3 py-2 rounded-md font-normal">
             </label>
 
             <label class="flex flex-col gap-1 text-sm font-medium">
-                Query params (key=value&amp;key=value)
+                Query params (optional, key=value&amp;key=value)
                 <input id="queryParams" type="text" value="orderId=123&source=promo"
                     class="border border-gray-300 px-3 py-2 rounded-md font-normal">
             </label>
 
-            <button onclick="openDeepLink()"
-                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Open Deep Link</button>
+            <label class="flex flex-col gap-1 text-sm font-medium">
+                Description (label for the link, default used if empty)
+                <input id="description" type="text" value="Demo short link"
+                    class="border border-gray-300 px-3 py-2 rounded-md font-normal">
+            </label>
+
+            <button onclick="generateShortLink()"
+                class="bg-yellow-400 text-white px-4 py-2 font-bold w-full rounded-md">Generate Short Link</button>
+        </div>
+
+        <div id="result" class="flex flex-col gap-3 mb-4 px-4" style="display: none;">
+            <div class="text-sm font-medium">Generated short link</div>
+            <div id="shortLink" class="border border-gray-300 px-3 py-2 rounded-md text-sm"
+                style="word-break: break-all;"></div>
+
+            <div id="qrCode" style="align-self: center; padding: 12px; background: #fff;"></div>
+
+            <div class="flex flex-row gap-2">
+                <button onclick="copyShortLink()"
+                    class="bg-blue-400 text-white px-4 py-2 font-bold flex-1 rounded-md">Copy</button>
+                <button onclick="openShortLink()"
+                    class="bg-green-400 text-white px-4 py-2 font-bold flex-1 rounded-md">Open</button>
+            </div>
         </div>
 
         <section id="content" class="flex-1 flex-grow mt-4 flex flex-col items-start p-4">
@@ -47,27 +70,106 @@
 </body>
 
 <script>
-    function buildDeepLink(miniappId, appendedUrlPart) {
-        return 'qicardwallet://qicard/deeplink.htm?action=miniapp'
-            + '&miniappId=' + encodeURIComponent(miniappId)
-            + '&_griver_appended_url_part=' + encodeURIComponent(appendedUrlPart);
-    }
+    const state = {
+        shortLink: '',
+    };
 
-    function openDeepLink() {
-        const miniappId = document.getElementById('miniappId').value.trim();
-        const path = document.getElementById('appendedUrlPart').value.trim();
-        const queryParams = document.getElementById('queryParams').value.trim();
+    function generateShortLink() {
+        const appId = document.getElementById('appId').value.trim();
+        let pagePath = document.getElementById('pagePath').value.trim();
+        const queryParams = document.getElementById('queryParams').value.trim().replace(/^\?/, '');
+        const description = document.getElementById('description').value.trim();
 
-        if (!miniappId) {
+        if (!appId) {
             my.alert({ content: 'Please enter a miniapp ID' });
             return;
         }
 
-        const appendedUrlPart = queryParams ? path + '?' + queryParams : path;
-        const url = buildDeepLink(miniappId, appendedUrlPart);
-        console.log('[deeplink] opening: ' + url);
+        if (pagePath && !pagePath.startsWith('/')) {
+            pagePath = '/' + pagePath;
+        }
 
-        window.location.replace(url);
+        const body = { appId, pagePath, queryParams, description };
+        console.log('[shortlink] requesting short link:', body);
+
+        fetch(`${BASE_URL}/api/miniapps/short-link`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }).then(async res => {
+            console.log('[shortlink] response status:', res.status);
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { error: text };
+            }
+        }).then(data => {
+            console.log('[shortlink] response data:', JSON.stringify(data, null, 2));
+
+            if (data.error || !data.appQrCode) {
+                const message = data.error || (data.result && data.result.resultMessage) || 'No link returned';
+                console.error('[shortlink] failed to generate short link: ' + message);
+                my.alert({ content: 'Failed to generate short link: ' + message });
+                return;
+            }
+
+            renderShortLink(data.appQrCode);
+        }).catch(err => {
+            console.error('[shortlink] request error:', err);
+            my.alert({ content: 'Failed to generate short link. Please try again.' });
+        });
+    }
+
+    function renderShortLink(link) {
+        state.shortLink = link;
+        console.log('[shortlink] generated: ' + link);
+
+        document.getElementById('shortLink').textContent = link;
+        document.getElementById('result').style.display = '';
+
+        const qrContainer = document.getElementById('qrCode');
+        qrContainer.innerHTML = '';
+
+        if (!window.QRCode) {
+            console.warn('[shortlink] QR code library not loaded, showing link only');
+            return;
+        }
+
+        new QRCode(qrContainer, {
+            text: link,
+            width: 200,
+            height: 200,
+            correctLevel: QRCode.CorrectLevel.M,
+        });
+    }
+
+    function copyShortLink() {
+        if (!state.shortLink) {
+            return;
+        }
+
+        my.setClipboard({
+            text: state.shortLink,
+            success: () => {
+                console.log('[shortlink] copied to clipboard');
+                my.showToast({ content: 'Link copied' });
+            },
+            fail: (err) => {
+                console.error('[shortlink] copy failed:', err);
+            },
+        });
+    }
+
+    function openShortLink() {
+        if (!state.shortLink) {
+            return;
+        }
+
+        console.log('[shortlink] opening: ' + state.shortLink);
+        window.location.href = state.shortLink;
     }
 </script>
 

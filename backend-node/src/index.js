@@ -8,7 +8,8 @@ const {
     initRefundEndpoint,
     initAgreementEndpoint,
     initNotificationEndpoint,
-    initInquiryEndpoint
+    initInquiryEndpoint,
+    initShortLinkEndpoint
 } = require('./api');
 
 async function main() {
@@ -35,6 +36,7 @@ async function main() {
     initAgreementEndpoint(apiRouter);
     initNotificationEndpoint(apiRouter);
     initInquiryEndpoint(apiRouter);
+    initShortLinkEndpoint(apiRouter);
 
     app.use('/api', apiRouter);
 
